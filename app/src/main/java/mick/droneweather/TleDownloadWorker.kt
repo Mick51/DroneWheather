@@ -20,16 +20,24 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
 import java.net.URL
 
 class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result {
-        return try {
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
             Log.d("TleWorker", "Starting TLE download from CelesTrak")
             
             // 1. Download TLE file
             val url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle"
-            val tleContent = URL(url).readText()
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
+            
+            val tleContent = connection.inputStream.bufferedReader().use { it.readText() }
             
             // 2. Parse the content (TLE is 3 lines per satellite)
             val satelliteList = parseTleData(tleContent)
@@ -64,4 +72,3 @@ class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineW
         return tleList
     }
 }
-

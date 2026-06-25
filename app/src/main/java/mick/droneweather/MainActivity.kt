@@ -71,7 +71,11 @@ import android.webkit.WebViewClient
 import android.webkit.WebSettings
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.work.*
 import coil.compose.AsyncImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import mick.droneweather.ui.theme.DroneWeatherTheme
 import mick.droneweather.ui.theme.AppBackground
 import mick.droneweather.ui.theme.NeonGreen
@@ -94,7 +98,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        OrekitInitializer.init(this)
+        lifecycleScope.launch(Dispatchers.IO) {
+            OrekitInitializer.init(this@MainActivity)
+        }
         
         val db = AppDatabase.getDatabase(this)
         val weatherApi = RetrofitInstance.api
@@ -104,11 +110,50 @@ class MainActivity : AppCompatActivity() {
         
         viewModel = ViewModelProvider(this, WeatherViewModelFactory(repository))[WeatherViewModel::class.java]
 
+        scheduleWorkers()
+
         setContent {
             DroneWeatherTheme {
                 SkyGoDashboard(viewModel)
             }
         }
+    }
+
+    private fun scheduleWorkers() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        // Periodic work
+        val tleRequest = PeriodicWorkRequestBuilder<TleDownloadWorker>(1, java.util.concurrent.TimeUnit.DAYS)
+            .setConstraints(constraints)
+            .build()
+
+        val forecastRequest = PeriodicWorkRequestBuilder<SatelliteForecastWorker>(6, java.util.concurrent.TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "TleDownload",
+            ExistingPeriodicWorkPolicy.KEEP,
+            tleRequest
+        )
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "SatelliteForecast",
+            ExistingPeriodicWorkPolicy.KEEP,
+            forecastRequest
+        )
+
+        // One-time work to ensure data is available immediately on first run
+        val oneTimeTleRequest = OneTimeWorkRequestBuilder<TleDownloadWorker>()
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "TleDownloadInitial",
+            ExistingWorkPolicy.KEEP,
+            oneTimeTleRequest
+        )
     }
 }
 
@@ -234,26 +279,27 @@ fun InteractiveForecastSelector(
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
+    val locale = Locale.getDefault()
 
     // 1. Group points by day and prepare colors for the heatmap gradient
-    val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val daysData = remember(uiState.hourlyForecast, uiState.language) {
+    val daysWithHours = remember(uiState.hourlyForecast) {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", locale)
         uiState.hourlyForecast.groupBy { 
-            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.timestamp * 1000))
-        }.map { (dateString, points) ->
-            val dayName = if (dateString == todayStr) {
-                // We'll handle "Today" in the UI part using stringResource
-                "TODAY" 
-            } else {
-                SimpleDateFormat("EEE", Locale.getDefault()).format(Date(points.first().timestamp * 1000))
-                    .replaceFirstChar { it.uppercase() }
+            sdf.format(Date(it.timestamp * 1000)) 
+        }
+    }
+
+    val daysData = remember(daysWithHours, uiState.language) {
+        val sdfDay = SimpleDateFormat("EEE", locale)
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", locale).format(Date())
+
+        daysWithHours.map { (dateString, points) ->
+            val dayName = if (dateString == todayStr) "TODAY" else {
+                sdfDay.format(Date(points.first().timestamp * 1000)).replaceFirstChar { it.uppercase() }
             }
-            
-            // Sample colors to create a smooth representation of the day's trend
             val dayColors = listOf(0, 8, 16, points.size - 1).map { i ->
                 points[i.coerceIn(points.indices)].safetyColor
             }
-
             object {
                 val date = dateString
                 val name = dayName
@@ -262,23 +308,31 @@ fun InteractiveForecastSelector(
         }
     }
 
-    val selectedDayString = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
-        Date(uiState.hourlyForecast[uiState.selectedIndex].timestamp * 1000)
-    )
+    val selectedDayString = remember(uiState.hourlyForecast, uiState.selectedIndex) {
+        val sdfDate = SimpleDateFormat("yyyy-MM-dd", locale)
+        sdfDate.format(Date(uiState.hourlyForecast[uiState.selectedIndex].timestamp * 1000))
+    }
 
-    val dayHours = uiState.hourlyForecast.filter {
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.timestamp * 1000)) == selectedDayString
+    val dayHours = remember(daysWithHours, selectedDayString) {
+        daysWithHours[selectedDayString] ?: emptyList()
     }
     
-    val hourIndexInDay = dayHours.indexOf(uiState.hourlyForecast[uiState.selectedIndex]).coerceAtLeast(0)
+    val hourIndexInDay = remember(dayHours, uiState.selectedIndex) {
+        dayHours.indexOf(uiState.hourlyForecast[uiState.selectedIndex]).coerceAtLeast(0)
+    }
+
+    var isDragging by remember { mutableStateOf(false) }
     var sliderValue by remember { mutableFloatStateOf(hourIndexInDay.toFloat()) }
     
     LaunchedEffect(hourIndexInDay) {
-        sliderValue = hourIndexInDay.toFloat()
+        if (!isDragging) {
+            sliderValue = hourIndexInDay.toFloat()
+        }
     }
 
     val animatedProgress by animateFloatAsState(
-        targetValue = sliderValue / (dayHours.size - 1).coerceAtLeast(1),
+        targetValue = if (isDragging) sliderValue / (dayHours.size - 1).coerceAtLeast(1) 
+                     else hourIndexInDay.toFloat() / (dayHours.size - 1).coerceAtLeast(1),
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "SliderAnimation"
     )
@@ -321,25 +375,30 @@ fun InteractiveForecastSelector(
                 .fillMaxWidth()
                 .height(65.dp)
                 .pointerInput(dayHours) {
-                    detectDragGestures { change, _ ->
-                        change.consume()
-                        val widthPx = size.width - 48.dp.toPx()
-                        val touchX = (change.position.x - 24.dp.toPx()).coerceIn(0f, widthPx)
-                        val progress = touchX / widthPx
-                        val newValue = progress * (dayHours.size - 1)
-                        
-                        val oldStep = sliderValue.roundToInt()
-                        val newStep = newValue.roundToInt().coerceIn(0, dayHours.size - 1)
-                        
-                        if (oldStep != newStep) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            val globalIdx = uiState.hourlyForecast.indexOf(dayHours[newStep])
-                            if (globalIdx != -1) {
-                                viewModel.selectForecastIndex(globalIdx)
+                    detectDragGestures(
+                        onDragStart = { isDragging = true },
+                        onDragEnd = { isDragging = false },
+                        onDragCancel = { isDragging = false },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val widthPx = size.width - 48.dp.toPx()
+                            val touchX = (change.position.x - 24.dp.toPx()).coerceIn(0f, widthPx)
+                            val progress = touchX / widthPx
+                            val newValue = progress * (dayHours.size - 1)
+                            
+                            val oldStep = sliderValue.roundToInt()
+                            val newStep = newValue.roundToInt().coerceIn(0, dayHours.size - 1)
+                            
+                            if (oldStep != newStep) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                val globalIdx = uiState.hourlyForecast.indexOf(dayHours[newStep])
+                                if (globalIdx != -1) {
+                                    viewModel.selectForecastIndex(globalIdx)
+                                }
                             }
+                            sliderValue = newValue
                         }
-                        sliderValue = newValue
-                    }
+                    )
                 }
                 .pointerInput(dayHours) {
                     detectTapGestures { offset ->
@@ -393,7 +452,7 @@ fun InteractiveForecastSelector(
                         .background(Color(0xFF00B0FF), CircleShape)
                 )
 
-                // Bulle rÃƒÂ©duite ÃƒÂ  30dp
+                // Bulle réduite à 30dp
                 Surface(
                     color = Color(0xFF00B0FF),
                     shape = CircleShape,
@@ -403,7 +462,7 @@ fun InteractiveForecastSelector(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         val currentStep = sliderValue.roundToInt().coerceIn(0, dayHours.size - 1)
-                        // Heure uniquement, adaptÃƒÂ©e au format
+                        // Heure uniquement, adaptée au format
                         val displayTime = if (uiState.timeFormat24h) {
                             dayHours[currentStep].time.split(":")[0] + "H"
                         } else {
@@ -465,7 +524,7 @@ fun InteractiveForecastSelector(
                         }
                     }
                 } else {
-                    // Landscape (DJI RC2): Capsules horizontales colorÃƒÂ©es et compactes
+                    // Landscape (DJI RC2): Capsules horizontales colorées et compactes
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -842,8 +901,10 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     }
 
     LaunchedEffect(Unit) {
-        permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-        // Initialiser le format 24h selon les paramÃƒÂ¨tres du systÃƒÂ¨me
+        if (!permissionsGranted) {
+            permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
+        // Initialiser le format 24h selon les paramètres du système
         viewModel.updateSettings(timeFormat24h = android.text.format.DateFormat.is24HourFormat(context))
     }
 
@@ -1394,39 +1455,61 @@ fun BadgeInfo(text: String, bgColor: Color, textColor: Color) {
 
 @Composable
 fun SafeZoneMapScreen(uiState: WeatherUiState) {
+    val context = LocalContext.current
+    
+    // 1. Gérer la WebView avec 'remember' pour éviter de la recréer inutilement au sein de l'écran
+    val webView = remember {
+        WebView(context).apply {
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            webViewClient = WebViewClient()
+            webChromeClient = android.webkit.WebChromeClient()
+            
+            @android.annotation.SuppressLint("SetJavaScriptEnabled")
+            settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                loadWithOverviewMode = true
+                useWideViewPort = true
+                setSupportZoom(true)
+                builtInZoomControls = true
+                displayZoomControls = false
+                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                cacheMode = WebSettings.LOAD_DEFAULT
+                userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
+            }
+        }
+    }
+
+    // 2. Cycle de vie : Détruire la WebView proprement quand on quitte l'onglet Map
+    DisposableEffect(webView) {
+        val lon = uiState.mapCenter.longitude
+        val lat = uiState.mapCenter.latitude
+        val url = "https://www.geoportail.gouv.fr/carte?c=$lon,$lat&z=14&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR.CV::GEOPORTAIL:OGC:WMTS(1)&l1=TRANSPORTS.DRONES.RESTRICTIONS::GEOPORTAIL:OGC:WMTS(0.8)&permalink=yes"
+        webView.loadUrl(url)
+        
+        onDispose {
+            webView.stopLoading()
+            webView.loadUrl("about:blank") // Libère les ressources JS
+            webView.clearHistory()
+            webView.removeAllViews()
+            webView.destroy()
+        }
+    }
+
+    // 3. Mise en pause/reprise auto (réduit la charge CPU en arrière-plan)
+    DisposableEffect(Unit) {
+        onDispose {
+            webView.onPause()
+            webView.pauseTimers()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
-            factory = { context ->
-                WebView(context).apply {
-                    layoutParams = android.view.ViewGroup.LayoutParams(
-                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    webViewClient = WebViewClient()
-                    webChromeClient = android.webkit.WebChromeClient()
-                    
-                    @android.annotation.SuppressLint("SetJavaScriptEnabled")
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        loadWithOverviewMode = true
-                        useWideViewPort = true
-                        setSupportZoom(true)
-                        builtInZoomControls = true
-                        displayZoomControls = false
-                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        cacheMode = WebSettings.LOAD_DEFAULT
-                        // User agent mobile récent pour éviter le blocage
-                        userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
-                    }
-                    
-                    val lon = uiState.mapCenter.longitude
-                    val lat = uiState.mapCenter.latitude
-                    // URL directe simplifiÃƒÂ©e vers les restrictions UAS
-                    val url = "https://www.geoportail.gouv.fr/carte?c=$lon,$lat&z=14&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR.CV::GEOPORTAIL:OGC:WMTS(1)&l1=TRANSPORTS.DRONES.RESTRICTIONS::GEOPORTAIL:OGC:WMTS(0.8)&permalink=yes"
-                    loadUrl(url)
-                }
-            },
+            factory = { webView },
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -1746,5 +1829,3 @@ fun getCardinalDirection(degrees: Int): String {
     val directions = listOf("N", "NE", "E", "SE", "S", "SO", "O", "NO", "N")
     return directions[((degrees % 360) / 45.0).roundToInt()]
 }
-
-
