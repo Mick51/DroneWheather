@@ -13,6 +13,7 @@ android {
     defaultConfig {
         applicationId = "mick.droneweather"
         minSdk = 24
+        @Suppress("TargetSdkMigrated")
         targetSdk = 37
         versionCode = 2
         versionName = "1.1 Beta"

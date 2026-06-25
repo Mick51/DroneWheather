@@ -15,6 +15,7 @@
         android:roundIcon="@drawable/app_logo"
         android:supportsRtl="true"
         tools:targetApi="33"
+        tools:ignore="UnusedAttribute"
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.DroneWeather">
         <activity
