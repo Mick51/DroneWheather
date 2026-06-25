@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.droneweather"
+    namespace = "mick.droneweather"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.droneweather"
+        applicationId = "mick.droneweather"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

@@ -16,7 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DroneWeather">
         <activity
-            android:name="com.example.droneweather.MainActivity"
+            android:name="mick.droneweather.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.DroneWeather">
