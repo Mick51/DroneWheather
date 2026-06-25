@@ -50,6 +50,11 @@ class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineW
             dao.insertTleData(satelliteList)
             
             Log.d("TleWorker", "Cleared DB and saved ${satelliteList.size} OPERATIONAL TLE entries")
+
+            // Trigger an immediate satellite forecast update since we have new orbital data
+            val forecastRequest = androidx.work.OneTimeWorkRequestBuilder<SatelliteForecastWorker>().build()
+            androidx.work.WorkManager.getInstance(applicationContext).enqueue(forecastRequest)
+
             Result.success()
         } catch (e: Exception) {
             Log.e("TleWorker", "Error downloading TLE data", e)

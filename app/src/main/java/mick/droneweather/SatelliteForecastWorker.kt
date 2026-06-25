@@ -42,9 +42,9 @@ class SatelliteForecastWorker(
 
         return try {
             val predictor = SatellitePredictor()
-            val forecasts = predictor.generate24hForecast(lat, lon, kp, tleList)
+            val forecasts = predictor.generateMultiDayForecast(lat, lon, kp, tleList, days = 7)
             
-            weatherDao.clearOldForecasts(System.currentTimeMillis() - 24 * 60 * 60 * 1000L)
+            weatherDao.clearOldForecasts(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L)
             weatherDao.insertSatelliteForecasts(forecasts)
             
             Log.d("SatelliteWorker", "Successfully updated ${forecasts.size} forecast points")

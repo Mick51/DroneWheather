@@ -338,11 +338,12 @@ class WeatherViewModel(
                             }
                             
                             Log.d("WeatherViewModel", "Generating sat forecast with ${filteredTle.size} filtered TLEs (total: ${allTle.size})")
-                            val satForecasts = predictor.generate24hForecast(
+                            val satForecasts = predictor.generateMultiDayForecast(
                                 data.latitude, 
                                 data.longitude, 
                                 data.kpValue?.toFloat() ?: 0f,
                                 filteredTle,
+                                days = 7,
                                 currentState.useGps,
                                 currentState.useGlonass,
                                 currentState.useGalileo,

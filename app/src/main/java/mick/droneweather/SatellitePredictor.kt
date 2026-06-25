@@ -105,6 +105,30 @@ class SatellitePredictor {
         )
     }
 
+    fun generateMultiDayForecast(
+        startLat: Double,
+        startLon: Double,
+        currentKp: Float,
+        tleList: List<TleData>,
+        days: Int = 7,
+        useGps: Boolean = true,
+        useGlonass: Boolean = true,
+        useGalileo: Boolean = true,
+        useBeidou: Boolean = true
+    ): List<SatelliteForecast> {
+        val forecasts = mutableListOf<SatelliteForecast>()
+        val now = (System.currentTimeMillis() / 1000) / 3600 * 3600
+        val step = 3600 // 1 hour steps for 7 days (168 points)
+        val points = days * 24
+
+        for (i in 0 until points) {
+            val targetTime = now + (i * step)
+            forecasts.add(calculatePrediction(targetTime, startLat, startLon, currentKp, tleList, useGps, useGlonass, useGalileo, useBeidou))
+        }
+
+        return forecasts
+    }
+
     fun generate24hForecast(
         startLat: Double,
         startLon: Double,
@@ -115,16 +139,7 @@ class SatellitePredictor {
         useGalileo: Boolean = true,
         useBeidou: Boolean = true
     ): List<SatelliteForecast> {
-        val forecasts = mutableListOf<SatelliteForecast>()
-        val now = (System.currentTimeMillis() / 1000) / 1800 * 1800
-        val step = 30 * 60
-
-        for (i in 0 until 48) {
-            val targetTime = now + (i * step)
-            forecasts.add(calculatePrediction(targetTime, startLat, startLon, currentKp, tleList, useGps, useGlonass, useGalileo, useBeidou))
-        }
-
-        return forecasts
+        return generateMultiDayForecast(startLat, startLon, currentKp, tleList, 1, useGps, useGlonass, useGalileo, useBeidou)
     }
 }
 
