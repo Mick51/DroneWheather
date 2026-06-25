@@ -306,22 +306,38 @@ class WeatherViewModel(
                     viewModelScope.launch(Dispatchers.Default) {
                         try {
                             val predictor = SatellitePredictor()
-                            val tleList = repository.getAllTleData()
-                            Log.d("WeatherViewModel", "Generating sat forecast with ${tleList.size} TLEs")
+                            val allTle = repository.getAllTleData()
+                            
+                            // Filter TLEs based on user settings to match "live" behavior
+                            val currentState = _uiState.value
+                            val filteredTle = allTle.filter { tle ->
+                                val name = tle.satelliteName.uppercase()
+                                when {
+                                    name.contains("GPS") -> currentState.useGps
+                                    name.contains("COSMOS") || name.contains("GLONASS") -> currentState.useGlonass
+                                    name.contains("GALILEO") -> currentState.useGalileo
+                                    name.contains("BEIDOU") || name.contains("BDS") -> currentState.useBeidou
+                                    else -> true // Include others by default if they are in the GNSS group
+                                }
+                            }
+                            
+                            Log.d("WeatherViewModel", "Generating sat forecast with ${filteredTle.size} filtered TLEs (total: ${allTle.size})")
                             val satForecasts = predictor.generate24hForecast(
                                 data.latitude, 
                                 data.longitude, 
                                 data.kpValue?.toFloat() ?: 0f,
-                                tleList
+                                filteredTle
                             )
                             repository.updateSatelliteForecasts(satForecasts)
+                            
+                            val first = satForecasts.firstOrNull()
                             _uiState.update { 
-                            it.copy(
-                                satelliteForecast = satForecasts,
-                                forecastSats = satForecasts.firstOrNull()?.availableSatellites ?: it.forecastSats,
-                                forecastSatsLocked = satForecasts.firstOrNull()?.lockedSatellites ?: it.forecastSatsLocked
-                            ) 
-                        }
+                                it.copy(
+                                    satelliteForecast = satForecasts,
+                                    forecastSats = first?.availableSatellites ?: it.forecastSats,
+                                    forecastSatsLocked = first?.lockedSatellites ?: it.forecastSatsLocked
+                                ) 
+                            }
                         } catch (e: Exception) {
                             Log.e("WeatherViewModel", "Error generating satellite forecast", e)
                         }

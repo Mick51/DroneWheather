@@ -68,13 +68,20 @@ class SatellitePredictor {
                 
                 Log.d("SatellitePredictor", "Sat: ${tleData.satelliteName}, Elevation: $elevationDeg")
 
-                if (elevationDeg > 10.0) {
+                // Elevation mask of 15 degrees is standard for reliable drone positioning
+                if (elevationDeg > 15.0) {
                     visible++
+                    
+                    // Higher satellites have better signal-to-noise ratio (SNR) and are more likely to be locked
+                    // We use a weighted probability based on elevation
+                    val elevationWeight = (elevationDeg - 15.0) / 75.0 // 0.0 at 15 deg, 1.0 at 90 deg
+                    val adjustedLockProb = lockProbabilityBase * (0.7f + 0.3f * elevationWeight.toFloat())
+                    
                     val prob = Math.random()
-                    if (prob < lockProbabilityBase) {
+                    if (prob < adjustedLockProb) {
                         locked++
                     }
-                    Log.d("SatellitePredictor", "Visible! Prob: $prob, Base: $lockProbabilityBase")
+                    Log.d("SatellitePredictor", "Visible! Elevation: $elevationDeg, Prob: $prob, Adjusted: $adjustedLockProb")
                 }
             } catch (e: Exception) {
                 // Skip invalid TLEs
@@ -84,7 +91,8 @@ class SatellitePredictor {
         // Ensure visible is at least current total if we are calculating for "now"
         // (Simple fallback if TLE list is empty or propagation fails)
         val isNow = Math.abs(timestamp - System.currentTimeMillis()/1000) < 1800
-        val finalVisible = if (visible == 0 && tleList.isEmpty()) (20..30).random() else visible
+        val fallbackVisible = (12..22).random()
+        val finalVisible = if (visible == 0 && tleList.isEmpty()) fallbackVisible else visible
         val finalLocked = if (locked == 0 && tleList.isEmpty()) (finalVisible * lockProbabilityBase).toInt() else locked
         
         Log.d("SatellitePredictor", "Final Result for $timestamp: Vis=$finalVisible, Lock=$finalLocked (tleList size: ${tleList.size})")

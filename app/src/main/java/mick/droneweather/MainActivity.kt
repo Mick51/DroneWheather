@@ -807,8 +807,20 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                     MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_sats_vis), value = uiState.forecastSats.toString(), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_sats_lock), value = "${uiState.forecastSatsLocked}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
+                    MetricCard(
+                        title = stringResource(R.string.metric_sats_vis), 
+                        value = uiState.forecastSats.toString(), 
+                        isLandscape = true, 
+                        modifier = Modifier.weight(1f), 
+                        onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
+                    )
+                    MetricCard(
+                        title = stringResource(R.string.metric_sats_lock), 
+                        value = "${uiState.forecastSatsLocked}", 
+                        isLandscape = true, 
+                        modifier = Modifier.weight(1f), 
+                        onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
+                    )
                 }
             } else {
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -836,8 +848,18 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_sats_vis), value = uiState.forecastSats.toString(), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_sats_lock), value = "${uiState.forecastSatsLocked}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
+                    MetricCard(
+                        title = stringResource(R.string.metric_sats_vis), 
+                        value = uiState.forecastSats.toString(), 
+                        modifier = Modifier.weight(1f), 
+                        onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
+                    )
+                    MetricCard(
+                        title = stringResource(R.string.metric_sats_lock), 
+                        value = "${uiState.forecastSatsLocked}",
+                        modifier = Modifier.weight(1f), 
+                        onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
+                    )
                 }
             }
         }
