@@ -2,7 +2,7 @@
     <string name="app_name">DroneWeather</string>
     <string name="uav_forecast_mode">Prévisions UAV</string>
     <string name="forecast_now">Maint.</string>
-    <string name="search_placeholder">Rechercher une ville...</string>
+    <string name="search_placeholder">Rechercher une ville…</string>
     <string name="hourly_weather_title">Météo Horaire (Prochaines 24h)</string>
     <string name="metric_wind_air">Vent (Air)</string>
     <string name="metric_gusts">Rafales</string>
@@ -27,7 +27,7 @@
     <string name="status_bz_warn">BZ INSTABLE - ATTENTION COMPAS</string>
     <string name="refresh_content_description">Rafraîchir</string>
     <string name="search_content_description">Rechercher</string>
-    <string name="location_loading">Localisation...</string>
+    <string name="location_loading">Localisation…</string>
     <string name="error_connection">Erreur de connexion</string>
 
     <!-- UI Elements -->
@@ -58,7 +58,7 @@
     <string name="current_location">Position actuelle</string>
     <string name="label_now_short">MAINT.</string>
     <string name="checklist_title">Checklist de pré-vol</string>
-    <string name="add_item_placeholder">Ajouter un point...</string>
+    <string name="add_item_placeholder">Ajouter un point…</string>
 
     <!-- Details -->
     <string name="detail_title">Détails de l\'Information</string>

@@ -35,12 +35,12 @@ class NoaaKpSource(private val api: KpApiService) : KpDataSource {
         return try {
             val kpList = api.getKpIndexRealTime()
             kpList.lastOrNull()?.kpValue ?: 0.0
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             try {
                 val kpList = api.getKpIndex()
                 kpList.lastOrNull()?.kpValue ?: 0.0
-            } catch (e2: Exception) {
-                Log.e("NoaaKpSource", "Erreur: ${e2.message}")
+            } catch (_: Exception) {
+                Log.e("NoaaKpSource", "Erreur NOAA")
                 0.0
             }
         }
@@ -60,8 +60,8 @@ class GfzKpSource(private val api: GfzApiService) : KpDataSource {
                 end = sdf.format(now)
             )
             response.kpValues.lastOrNull() ?: 0.0
-        } catch (e: Exception) {
-            Log.e("GfzKpSource", "Erreur GFZ: ${e.message}")
+        } catch (_: Exception) {
+            Log.e("GfzKpSource", "Erreur GFZ")
             0.0
         }
     }
@@ -104,8 +104,8 @@ class WeatherRepository(
         val cached = weatherDao.getCachedData()
         val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
 
-        if (!force && !isExpired && cached != null) {
-            return@coroutineScope cached
+        if (!force && !isExpired) {
+            return@coroutineScope cached!!
         }
 
         try {
@@ -138,7 +138,7 @@ class WeatherRepository(
             }
             val kpDeferred = async {
                 remoteSources.map { source ->
-                    async { try { source.getKpIndex() } catch (e: Exception) { 0.0 } }
+                    async { try { source.getKpIndex() } catch (_: Exception) { 0.0 } }
                 }.awaitAll().maxOrNull() ?: 0.0
             }
             val plasmaDeferred = async { try { kpApi.getSolarWind() } catch (_: Exception) { emptyList<List<Any>>() } }
@@ -315,13 +315,13 @@ class WeatherRepository(
             try {
                 val timeTag = entry["time_tag"]?.toString() ?: continue
                 val kpVal = entry["kp"]?.toString() ?: entry["kp_index"]?.toString() ?: continue
-                val rowDate = try { sdfT.parse(timeTag) } catch(e: Exception) { sdfSpace.parse(timeTag) } ?: continue
+                val rowDate = try { sdfT.parse(timeTag) } catch(_: Exception) { sdfSpace.parse(timeTag) } ?: continue
                 val diff = kotlin.math.abs(rowDate.time - targetDate.time)
                 if (diff < minDiff) {
                     minDiff = diff
                     closestKp = kpVal
                 }
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
         }
         return if (minDiff > 12 * 60 * 60 * 1000L) "N/A" else closestKp
     }

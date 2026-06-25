@@ -19,7 +19,6 @@ package mick.droneweather
 import android.Manifest
 import android.app.LocaleManager
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -79,8 +78,6 @@ import mick.droneweather.ui.theme.NeonGreen
 import mick.droneweather.ui.theme.GreenSafe
 import mick.droneweather.ui.theme.YellowWarn
 import mick.droneweather.ui.theme.RedDanger
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
@@ -1408,6 +1405,7 @@ fun SafeZoneMapScreen(uiState: WeatherUiState) {
                     webViewClient = WebViewClient()
                     webChromeClient = android.webkit.WebChromeClient()
                     
+                    @android.annotation.SuppressLint("SetJavaScriptEnabled")
                     settings.apply {
                         javaScriptEnabled = true
                         domStorageEnabled = true
