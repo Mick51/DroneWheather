@@ -752,7 +752,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature}Ã‚Â°C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature} \u00B0C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_vis), "${uiState.forecastSats}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_lock), "${uiState.forecastSatsLocked}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                 }
@@ -781,7 +781,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature}Ã‚Â°C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature} \u00B0C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_vis), "${uiState.forecastSats}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_lock), "${uiState.forecastSatsLocked}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                 }
@@ -1046,7 +1046,7 @@ fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         }
 
                         // Data Cells with Colors
-                        TableCell(text = "${hour.temp}Ã‚Â°", color = viewModel.getCardColor("Temp", hour.temp), modifier = Modifier.weight(1f))
+                        TableCell(text = "${hour.temp}\u00B0", color = viewModel.getCardColor("Temp", hour.temp), modifier = Modifier.weight(1f))
                         TableCell(text = hour.wind, color = viewModel.getCardColor("Vent", hour.wind), modifier = Modifier.weight(1f))
                         TableCell(text = hour.gusts, color = viewModel.getCardColor("Gusts", hour.gusts), modifier = Modifier.weight(1f))
                         TableCell(text = hour.kp, color = viewModel.getCardColor("Kp", hour.kp.toDoubleOrNull()), modifier = Modifier.weight(1f))
@@ -1157,7 +1157,7 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                             modifier = Modifier.weight(1f).size(if (isLandscape) 14.dp else 16.dp).rotate(uiState.windDeg.toFloat() - 90f),
                             tint = Color.Black
                         )
-                        Text("${uiState.temperature}Ã‚Â°C", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
+                        Text("${uiState.temperature} \u00B0C", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
                     }
                     HorizontalDivider(color = Color.Black.copy(alpha = 0.1f), thickness = 0.5.dp)
                 }
