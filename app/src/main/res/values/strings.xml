@@ -1,0 +1,125 @@
+<resources>
+    <string name="app_name">DroneWeather</string>
+    <string name="uav_forecast_mode">UAV Forecast</string>
+    <string name="forecast_now">Now</string>
+    <string name="search_placeholder">Search city...</string>
+    <string name="hourly_weather_title">Hourly Weather (Next 24h)</string>
+    <string name="metric_wind_air">Wind (Air)</string>
+    <string name="metric_gusts">Gusts</string>
+    <string name="metric_wind_dir">Wind Dir.</string>
+    <string name="metric_precip">Precip</string>
+    <string name="metric_clouds">Clouds</string>
+    <string name="metric_visibility">Visibility</string>
+    <string name="metric_kp_live">Kp (Live)</string>
+    <string name="metric_sunrise">Sun Times</string>
+    <string name="metric_sunset">Sunset</string>
+    <string name="metric_temperature">Temperature</string>
+    <string name="metric_bz_field">Bz Field</string>
+    <string name="metric_sats_vis">Sats. Vis.</string>
+    <string name="metric_sats_lock">Sats. Lock</string>
+    <string name="metric_weather">Weather</string>
+    <string name="status_ready">READY TO FLY</string>
+    <string name="status_winds_danger">DANGEROUS WINDS</string>
+    <string name="status_precip_danger">PRECIPITATION DANGER</string>
+    <string name="status_kp_danger">CRITICAL KP - GPS DANGER</string>
+    <string name="status_kp_warn">MODERATE KP - GPS ADVISORY</string>
+    <string name="status_bz_danger">CRITICAL BZ - COMPASS DANGER</string>
+    <string name="status_bz_warn">UNSTABLE BZ - COMPASS ADVISORY</string>
+    <string name="refresh_content_description">Refresh</string>
+    <string name="search_content_description">Search</string>
+    <string name="location_loading">Locating...</string>
+    <string name="error_connection">Connection error</string>
+
+    <!-- UI Elements -->
+    <string name="return_to_now">Return to now</string>
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_tools">Tools</string>
+    <string name="tab_community">Community</string>
+    <string name="tab_help">Help</string>
+    <string name="tab_settings">Settings</string>
+    <string name="today">Today</string>
+
+    <string name="tool_forecast_table">Forecast Table</string>
+    <string name="tool_wind_profile">Wind Profile</string>
+    <string name="tool_checklist">Checklist</string>
+    <string name="tool_wind_compass">Wind Compass</string>
+    <string name="tool_safe_zones">UAS Restriction Zones</string>
+
+    <!-- Table & Profile Headers -->
+    <string name="header_time">Time</string>
+    <string name="header_temp">Temp</string>
+    <string name="header_wind">Wind</string>
+    <string name="header_gusts">Gusts</string>
+    <string name="header_kp">Kp</string>
+    <string name="header_rain">Rain</string>
+    <string name="header_altitude">Altitude</string>
+    <string name="header_direction">Direction</string>
+    <string name="current_location">Current location</string>
+    <string name="label_now_short">NOW</string>
+    <string name="checklist_title">Pre-flight Checklist</string>
+    <string name="add_item_placeholder">Add item...</string>
+
+    <!-- Details -->
+    <string name="detail_title">Information Details</string>
+    <string name="detail_close">Close</string>
+    <string name="wind_by_altitude">Wind speed by altitude:</string>
+    <string name="altitude_ground">Ground</string>
+    <string name="desc_wind">Wind speed measured at 10m height. High winds can affect drone stability and battery life. Threshold: > 25 km/h is dangerous.</string>
+    <string name="desc_gusts">Sudden bursts of wind. Gusts are often more dangerous than constant wind for drone flight. Threshold: > 35 km/h is dangerous.</string>
+    <string name="desc_wind_dir">Direction the wind is coming from. Important for takeoff and landing strategies.</string>
+    <string name="desc_precip">Probability of rain or snow. Most consumer drones are not waterproof. Threshold: > 10% is risky.</string>
+    <string name="desc_clouds">Percentage of the sky covered by clouds. Affects visibility and lighting for filming.</string>
+    <string name="desc_visibility">Horizontal distance at which objects can be clearly seen. Critical for VLOS (Visual Line of Sight) flights.</string>
+    <string name="desc_kp">Index representing geomagnetic activity. A high Kp index (> 4) can cause GPS interference and "flyaways".</string>
+    <string name="desc_sunrise_sunset">Times when the sun rises and sets. Essential for legal night flight requirements and visibility.</string>
+    <string name="desc_temp">Current ambient temperature. Extreme cold or heat affects battery performance and electronics.</string>
+    <string name="desc_bz">Interplanetary magnetic field component. Negative Bz values can lead to magnetic storms affecting the drone\'s compass.</string>
+    <string name="desc_sats">Number of satellites calculated by orbital prediction. Higher numbers ensure better stability.</string>
+    <string name="btn_oktofly">Expert Forecast (oktofly.com)</string>
+
+    <!-- Settings -->
+    <string name="settings_drone_config">Drone Configuration</string>
+    <string name="settings_wind_limits">Wind limits</string>
+    <string name="settings_kp_alerts">Kp alerts</string>
+    <string name="settings_gnss_constellations">GNSS Constellations</string>
+    <string name="gnss_gps">GPS (USA)</string>
+    <string name="gnss_glonass">GLONASS (Russia)</string>
+    <string name="gnss_galileo">Galileo (Europe)</string>
+    <string name="gnss_beidou">BeiDou (China)</string>
+    <string name="search_dialog_title">Search City</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_search">Search</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_time_format">Time Format</string>
+    <string name="settings_time_24h">24 hours</string>
+    <string name="settings_time_12h">12 hours</string>
+    <string name="settings_drone_label">Drone</string>
+    <string name="settings_drone_model">Drone Model</string>
+    <string name="settings_drone_mini">DJI Mini</string>
+    <string name="settings_drone_air">DJI Air</string>
+    <string name="settings_drone_mavic">DJI Mavic</string>
+    <string name="settings_drone_custom">Custom</string>
+    <string name="settings_source_label">Source</string>
+    <string name="settings_temp_label">Temperature</string>
+    <string name="settings_temp_range">Flight temperature range: %1$d°C to %2$d°C</string>
+    <string name="settings_wind_label">Wind speed</string>
+    <string name="settings_wind_max">Max allowed speed: %1$d km/h</string>
+    <string name="settings_altitude_label">Altitude</string>
+    <string name="settings_alt_meters">Meters (m)</string>
+    <string name="settings_alt_feet">Feet (ft)</string>
+    <string name="settings_forecast_alt">Forecast altitude: %1$d m</string>
+    <string name="settings_visibility_label">Visibility</string>
+    <string name="settings_visibility_min">Min visibility required: %1$.1f km</string>
+    <string name="settings_weather_label">Weather</string>
+    <string name="settings_alert_rain">Rain Alert</string>
+    <string name="settings_alert_storm">Storm Alert</string>
+    <string name="settings_ui_label">Data Display</string>
+    <string name="settings_dark_theme">Dark Theme</string>
+    <string name="settings_smooth_anim">Smooth Animations</string>
+    <string name="settings_notifications_label">Notifications</string>
+    <string name="settings_alert_weather">Weather Alerts</string>
+    <string name="settings_morning_forecast">Morning Forecast</string>
+    <string name="chart_sat_title">Satellite Forecast (24h)</string>
+    <string name="chart_sat_locked">Locked</string>
+    <string name="chart_sat_visible">Visible</string>
+</resources>

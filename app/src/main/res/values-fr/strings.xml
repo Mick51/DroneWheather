@@ -1,0 +1,125 @@
+<resources>
+    <string name="app_name">DroneWeather</string>
+    <string name="uav_forecast_mode">Prévisions UAV</string>
+    <string name="forecast_now">Maint.</string>
+    <string name="search_placeholder">Rechercher une ville...</string>
+    <string name="hourly_weather_title">Météo Horaire (Prochaines 24h)</string>
+    <string name="metric_wind_air">Vent (Air)</string>
+    <string name="metric_gusts">Rafales</string>
+    <string name="metric_wind_dir">Dir. Vent</string>
+    <string name="metric_precip">Précip.</string>
+    <string name="metric_clouds">Nuages</string>
+    <string name="metric_visibility">Visibilité</string>
+    <string name="metric_kp_live">Kp (Live)</string>
+    <string name="metric_sunrise">Lever / Coucher</string>
+    <string name="metric_sunset">Coucher Soleil</string>
+    <string name="metric_temperature">Température</string>
+    <string name="metric_bz_field">Champ Bz</string>
+    <string name="metric_sats_vis">Sats. Vis.</string>
+    <string name="metric_sats_lock">Sats. Lock</string>
+    <string name="metric_weather">Météo</string>
+    <string name="status_ready">PRÊT À VOLER</string>
+    <string name="status_winds_danger">VENTS DANGEREUX</string>
+    <string name="status_precip_danger">DANGER PRÉCIPITATIONS</string>
+    <string name="status_kp_danger">KP CRITIQUE - DANGER GPS</string>
+    <string name="status_kp_warn">KP MODÉRÉ - ATTENTION GPS</string>
+    <string name="status_bz_danger">BZ CRITIQUE - DANGER COMPAS</string>
+    <string name="status_bz_warn">BZ INSTABLE - ATTENTION COMPAS</string>
+    <string name="refresh_content_description">Rafraîchir</string>
+    <string name="search_content_description">Rechercher</string>
+    <string name="location_loading">Localisation...</string>
+    <string name="error_connection">Erreur de connexion</string>
+
+    <!-- UI Elements -->
+    <string name="return_to_now">Retour à maintenant</string>
+    <string name="tab_dashboard">Accueil</string>
+    <string name="tab_tools">Outils</string>
+    <string name="tab_community">Communauté</string>
+    <string name="tab_help">Aide</string>
+    <string name="tab_settings">Paramètres</string>
+    <string name="today">Aujourd\'hui</string>
+
+    <string name="tool_forecast_table">Prévision en tableau</string>
+    <string name="tool_wind_profile">Profil du Vent</string>
+    <string name="tool_checklist">Checklist</string>
+    <string name="tool_wind_compass">Boussole du Vent</string>
+    <string name="tool_safe_zones">Zones de Restrictions UAS</string>
+
+    <!-- Table & Profile Headers -->
+    <string name="header_time">Heure</string>
+    <string name="header_temp">Temp</string>
+    <string name="header_wind">Vent</string>
+    <string name="header_gusts">Raf.</string>
+    <string name="header_kp">Kp</string>
+    <string name="header_rain">Pluie</string>
+    <string name="header_altitude">Altitude</string>
+    <string name="header_direction">Direction</string>
+    <string name="current_location">Position actuelle</string>
+    <string name="label_now_short">MAINT.</string>
+    <string name="checklist_title">Checklist de pré-vol</string>
+    <string name="add_item_placeholder">Ajouter un point...</string>
+
+    <!-- Details -->
+    <string name="detail_title">Détails de l\'Information</string>
+    <string name="detail_close">Fermer</string>
+    <string name="wind_by_altitude">Vitesse du vent par altitude :</string>
+    <string name="altitude_ground">Sol</string>
+    <string name="desc_wind">Vitesse du vent mesurée à 10m de hauteur. Des vents forts peuvent affecter la stabilité du drone et l\'autonomie de la batterie. Seuil : > 25 km/h est dangereux.</string>
+    <string name="desc_gusts">Rafales de vent soudaines. Les rafales sont souvent plus dangereuses que le vent constant pour le vol de drone. Seuil : > 35 km/h est dangereux.</string>
+    <string name="desc_wind_dir">Direction d\'où vient le vent. Important pour les stratégies de décollage et d\'atterrissage.</string>
+    <string name="desc_precip">Probabilité de pluie ou de neige. La plupart des drones grand public ne sont pas étanches. Seuil : > 10% est risqué.</string>
+    <string name="desc_clouds">Pourcentage du ciel couvert par les nuages. Affecte la visibilité et la luminosité pour le tournage.</string>
+    <string name="desc_visibility">Distance horizontale à laquelle les objets peuvent être vus clairement. Critique pour les vols en vue directe (VLOS).</string>
+    <string name="desc_kp">Indice représentant l\'activité géomagnétique. Un indice Kp élevé (> 4) peut causer des interférences GPS et des pertes de contrôle.</string>
+    <string name="desc_sunrise_sunset">Heures auxquelles le soleil se lève et se couche. Essentiel pour les obligations légales de vol de nuit et la visibilité.</string>
+    <string name="desc_temp">Température ambiante actuelle. Le froid ou le chaud extrême affecte les performances de la batterie et de l\'électronique.</string>
+    <string name="desc_bz">Composante du champ magnétique interplanétaire. Des valeurs Bz négatives peuvent entraîner des tempêtes magnétiques affectant le compas du drone.</string>
+    <string name="desc_sats">Nombre de satellites calculés par prédiction orbitale. Un nombre plus élevé assure une meilleure précision de positionnement et de stabilité.</string>
+    <string name="btn_oktofly">Prévisions Expert (oktofly.com)</string>
+
+    <!-- Settings -->
+    <string name="settings_drone_config">Configuration du Drone</string>
+    <string name="settings_wind_limits">Limites de vent</string>
+    <string name="settings_kp_alerts">Alertes Kp</string>
+    <string name="settings_gnss_constellations">Constellations GNSS</string>
+    <string name="gnss_gps">GPS (USA)</string>
+    <string name="gnss_glonass">GLONASS (Russie)</string>
+    <string name="gnss_galileo">Galileo (Europe)</string>
+    <string name="gnss_beidou">BeiDou (Chine)</string>
+    <string name="search_dialog_title">Rechercher une ville</string>
+    <string name="btn_cancel">Annuler</string>
+    <string name="btn_search">Rechercher</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_time_format">Format d\'heure</string>
+    <string name="settings_time_24h">24 heures</string>
+    <string name="settings_time_12h">12 heures</string>
+    <string name="settings_drone_label">Drone</string>
+    <string name="settings_drone_model">Modèle de Drone</string>
+    <string name="settings_drone_mini">DJI Mini</string>
+    <string name="settings_drone_air">DJI Air</string>
+    <string name="settings_drone_mavic">DJI Mavic</string>
+    <string name="settings_drone_custom">Personnalisé</string>
+    <string name="settings_source_label">Source</string>
+    <string name="settings_temp_label">Température</string>
+    <string name="settings_temp_range">Plage de température de vol : %1$d°C à %2$d°C</string>
+    <string name="settings_wind_label">Vitesse du vent</string>
+    <string name="settings_wind_max">Vitesse max autorisée : %1$d km/h</string>
+    <string name="settings_altitude_label">Altitude</string>
+    <string name="settings_alt_meters">Mètres (m)</string>
+    <string name="settings_alt_feet">Pieds (ft)</string>
+    <string name="settings_forecast_alt">Altitude de prévision : %1$d m</string>
+    <string name="settings_visibility_label">Visibilité</string>
+    <string name="settings_visibility_min">Visibilité min requise : %1$.1f km</string>
+    <string name="settings_weather_label">Météo</string>
+    <string name="settings_alert_rain">Alerte Pluie</string>
+    <string name="settings_alert_storm">Alerte Orage</string>
+    <string name="settings_ui_label">Affichage des Données</string>
+    <string name="settings_dark_theme">Thème Sombre</string>
+    <string name="settings_smooth_anim">Animations Fluides</string>
+    <string name="settings_notifications_label">Notifications</string>
+    <string name="settings_alert_weather">Alertes Météo</string>
+    <string name="settings_morning_forecast">Prévisions Matinales</string>
+    <string name="chart_sat_title">Prévisions Satellites (24h)</string>
+    <string name="chart_sat_locked">Verrouillés</string>
+    <string name="chart_sat_visible">Visibles</string>
+</resources>
