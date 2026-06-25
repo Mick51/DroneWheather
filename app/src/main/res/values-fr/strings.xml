@@ -90,6 +90,9 @@
     <string name="btn_cancel">Annuler</string>
     <string name="btn_search">Rechercher</string>
     <string name="settings_language">Langue</string>
+    <string name="lang_fr">Français</string>
+    <string name="lang_en">Anglais</string>
+    <string name="lang_pl">Polonais</string>
     <string name="settings_time_format">Format d\'heure</string>
     <string name="settings_time_24h">24 heures</string>
     <string name="settings_time_12h">12 heures</string>

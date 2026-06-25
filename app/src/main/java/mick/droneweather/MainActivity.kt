@@ -1204,12 +1204,12 @@ fun ChecklistScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
 
 @Composable
 fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
-    val deviceAzimuth = uiState.deviceAzimuth // Orientation du tÃƒÂ©lÃƒÂ©phone (0 = Nord)
+    val deviceAzimuth = uiState.deviceAzimuth // Orientation du téléphone (0 = Nord)
     val windDeg = uiState.windDeg.toFloat() // Direction du vent (0 = vient du Nord)
     
-    // L'angle de l'aiguille bleue (vent) par rapport au tÃƒÂ©lÃƒÂ©phone
-    // On ajoute 180 car l'icÃƒÂ´ne Navigation pointe vers le haut (0Ã‚Â°), 
-    // et on veut montrer d'oÃƒÂ¹ vient le vent ou vers oÃƒÂ¹ il va.
+    // L'angle de l'aiguille bleue (vent) par rapport au téléphone
+    // On ajoute 180 car l'icône Navigation pointe vers le haut (0°), 
+    // et on veut montrer d'où vient le vent ou vers où il va.
     val relativeWindAngle = windDeg - deviceAzimuth
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1254,7 +1254,7 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${uiState.windDeg}Ã‚Â°",
+                        text = "${uiState.windDeg}\u00B0",
                         color = Color.Gray,
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -1336,8 +1336,8 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                BadgeInfo("MAG: ${uiState.windDeg}Ã‚Â°", Color(0xFF00B0FF).copy(alpha = 0.2f), Color(0xFF00B0FF))
-                BadgeInfo("TRUE: ${uiState.windDeg}Ã‚Â°", Color(0xFF4CAF50).copy(alpha = 0.2f), Color(0xFF4CAF50))
+                BadgeInfo("MAG: ${uiState.windDeg}\u00B0", Color(0xFF00B0FF).copy(alpha = 0.2f), Color(0xFF00B0FF))
+                BadgeInfo("TRUE: ${uiState.windDeg}\u00B0", Color(0xFF4CAF50).copy(alpha = 0.2f), Color(0xFF4CAF50))
             }
         }
 
@@ -1501,15 +1501,15 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 // 1. Language
                 var langExpanded by remember { mutableStateOf(false) }
                 SettingsSelectorRow(stringResource(R.string.settings_language), when(uiState.language) {
-                    "fr" -> "FranÃƒÂ§ais"
-                    "en" -> "English"
-                    "pl" -> "Polski"
-                    else -> "FranÃƒÂ§ais"
-                }, langExpanded, { langExpanded = !langExpanded })
+                    "fr" -> stringResource(R.string.lang_fr)
+                    "en" -> stringResource(R.string.lang_en)
+                    "pl" -> stringResource(R.string.lang_pl)
+                    else -> stringResource(R.string.lang_fr)
+                }, langExpanded) { langExpanded = !langExpanded }
                 DropdownMenu(expanded = langExpanded, onDismissRequest = { langExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
-                    DropdownMenuItem(text = { Text("FranÃƒÂ§ais", color = Color.White) }, onClick = { viewModel.updateSettings(language = "fr"); langExpanded = false })
-                    DropdownMenuItem(text = { Text("English", color = Color.White) }, onClick = { viewModel.updateSettings(language = "en"); langExpanded = false })
-                    DropdownMenuItem(text = { Text("Polski", color = Color.White) }, onClick = { viewModel.updateSettings(language = "pl"); langExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_fr), color = Color.White) }, onClick = { viewModel.updateSettings(language = "fr"); langExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_en), color = Color.White) }, onClick = { viewModel.updateSettings(language = "en"); langExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_pl), color = Color.White) }, onClick = { viewModel.updateSettings(language = "pl"); langExpanded = false })
                 }
 
                 // 2. Time Format
@@ -1551,7 +1551,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
 
                 // --- Expandable Sections ---
 
-                // TempÃƒÂ©rature
+                // Température
                 SettingsExpandableRow(stringResource(R.string.settings_temp_label), expandedSection == "temp") { expandedSection = if (expandedSection == "temp") null else "temp" }
                 if (expandedSection == "temp") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1598,7 +1598,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     }
                 }
 
-                // VisibilitÃƒÂ©
+                // Visibilité
                 SettingsExpandableRow(stringResource(R.string.settings_visibility_label), expandedSection == "vis") { expandedSection = if (expandedSection == "vis") null else "vis" }
                 if (expandedSection == "vis") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1612,7 +1612,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     }
                 }
 
-                // MÃƒÂ©tÃƒÂ©o
+                // Météo
                 SettingsExpandableRow(stringResource(R.string.settings_weather_label), expandedSection == "meteo") { expandedSection = if (expandedSection == "meteo") null else "meteo" }
                 if (expandedSection == "meteo") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1632,7 +1632,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     }
                 }
 
-                // Affichage des DonnÃƒÂ©es
+                // Affichage des Données
                 SettingsExpandableRow(stringResource(R.string.settings_ui_label), expandedSection == "ui") { expandedSection = if (expandedSection == "ui") null else "ui" }
                 if (expandedSection == "ui") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1756,4 +1756,5 @@ fun getCardinalDirection(degrees: Int): String {
     val directions = listOf("N", "NE", "E", "SE", "S", "SO", "O", "NO", "N")
     return directions[((degrees % 360) / 45.0).roundToInt()]
 }
+
 
