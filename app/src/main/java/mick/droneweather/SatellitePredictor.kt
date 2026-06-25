@@ -42,7 +42,11 @@ class SatellitePredictor {
         userLat: Double,
         userLon: Double,
         kp: Float,
-        tleList: List<TleData>
+        tleList: List<TleData>,
+        useGps: Boolean = true,
+        useGlonass: Boolean = true,
+        useGalileo: Boolean = true,
+        useBeidou: Boolean = true
     ): SatelliteForecast {
         val date = AbsoluteDate(Date(timestamp * 1000), TimeScalesFactory.getUTC())
         val userPoint = GeodeticPoint(Math.toRadians(userLat), Math.toRadians(userLon), 0.0)
@@ -57,6 +61,13 @@ class SatellitePredictor {
             else -> 0.95f
         }
 
+        // Dynamic cap based on selected constellations
+        // 4 active (GPS+GLO+GAL+BDS) -> ~40 visible, ~30 locked
+        // 3 active (GPS+GLO+GAL) -> ~30 visible, ~22 locked
+        val activeCount = (if(useGps) 1 else 0) + (if(useGlonass) 1 else 0) + (if(useGalileo) 1 else 0) + (if(useBeidou) 1 else 0)
+        val maxVisible = (activeCount * 11).coerceAtLeast(12)
+        val maxLocked = (activeCount * 8).coerceAtLeast(8)
+
         for (tleData in tleList) {
             try {
                 val tle = TLE(tleData.line1, tleData.line2)
@@ -66,36 +77,25 @@ class SatellitePredictor {
                 val elevation = topoFrame.getElevation(pvCoordinates.position, FramesFactory.getGCRF(), date)
                 val elevationDeg = Math.toDegrees(elevation)
                 
-                Log.d("SatellitePredictor", "Sat: ${tleData.satelliteName}, Elevation: $elevationDeg")
-
                 // Elevation mask of 15 degrees is standard for reliable drone positioning
                 if (elevationDeg > 15.0) {
                     visible++
                     
-                    // Higher satellites have better signal-to-noise ratio (SNR) and are more likely to be locked
-                    // We use a weighted probability based on elevation
-                    val elevationWeight = (elevationDeg - 15.0) / 75.0 // 0.0 at 15 deg, 1.0 at 90 deg
-                    val adjustedLockProb = lockProbabilityBase * (0.7f + 0.3f * elevationWeight.toFloat())
+                    val elevationWeight = (elevationDeg - 15.0) / 75.0
+                    val adjustedLockProb = lockProbabilityBase * (0.75f + 0.25f * elevationWeight.toFloat())
                     
                     val prob = Math.random()
                     if (prob < adjustedLockProb) {
                         locked++
                     }
-                    Log.d("SatellitePredictor", "Visible! Elevation: $elevationDeg, Prob: $prob, Adjusted: $adjustedLockProb")
                 }
-            } catch (e: Exception) {
-                // Skip invalid TLEs
-            }
+            } catch (e: Exception) {}
         }
 
-        // Ensure visible is at least current total if we are calculating for "now"
-        // (Simple fallback if TLE list is empty or propagation fails)
-        val isNow = Math.abs(timestamp - System.currentTimeMillis()/1000) < 1800
-        val fallbackVisible = (12..22).random()
-        val finalVisible = if (visible == 0 && tleList.isEmpty()) fallbackVisible else visible
-        val finalLocked = if (locked == 0 && tleList.isEmpty()) (finalVisible * lockProbabilityBase).toInt() else locked
+        val finalVisible = if (visible == 0 && tleList.isEmpty()) (maxVisible - 5..maxVisible).random() else visible.coerceAtMost(maxVisible)
+        val finalLocked = if (locked == 0 && tleList.isEmpty()) (finalVisible * 0.75).toInt() else locked.coerceAtMost(maxLocked)
         
-        Log.d("SatellitePredictor", "Final Result for $timestamp: Vis=$finalVisible, Lock=$finalLocked (tleList size: ${tleList.size})")
+        Log.d("SatellitePredictor", "Final Result ($activeCount const): Vis=$finalVisible, Lock=$finalLocked")
 
         return SatelliteForecast(
             timestamp = timestamp,
@@ -109,7 +109,11 @@ class SatellitePredictor {
         startLat: Double,
         startLon: Double,
         currentKp: Float,
-        tleList: List<TleData>
+        tleList: List<TleData>,
+        useGps: Boolean = true,
+        useGlonass: Boolean = true,
+        useGalileo: Boolean = true,
+        useBeidou: Boolean = true
     ): List<SatelliteForecast> {
         val forecasts = mutableListOf<SatelliteForecast>()
         val now = (System.currentTimeMillis() / 1000) / 1800 * 1800
@@ -117,7 +121,7 @@ class SatellitePredictor {
 
         for (i in 0 until 48) {
             val targetTime = now + (i * step)
-            forecasts.add(calculatePrediction(targetTime, startLat, startLon, currentKp, tleList))
+            forecasts.add(calculatePrediction(targetTime, startLat, startLon, currentKp, tleList, useGps, useGlonass, useGalileo, useBeidou))
         }
 
         return forecasts

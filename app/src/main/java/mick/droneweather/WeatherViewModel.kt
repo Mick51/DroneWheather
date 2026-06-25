@@ -182,8 +182,24 @@ class WeatherViewModel(
 
     private fun loadSatelliteForecast() {
         viewModelScope.launch {
-            val forecasts = repository.getSatelliteForecast()
-            _uiState.update { it.copy(satelliteForecast = forecasts) }
+            repository.getSatelliteForecastFlow().collect { forecasts ->
+                val now = System.currentTimeMillis() / 1000
+                
+                _uiState.update { currentState ->
+                    val selectedHour = currentState.hourlyForecast.getOrNull(currentState.selectedIndex)
+                    val correspondingSat = if (selectedHour != null) {
+                        forecasts.minByOrNull { kotlin.math.abs(it.timestamp - selectedHour.timestamp) }
+                    } else {
+                        forecasts.minByOrNull { kotlin.math.abs(it.timestamp - now) }
+                    }
+
+                    currentState.copy(
+                        satelliteForecast = forecasts,
+                        forecastSats = correspondingSat?.availableSatellites ?: currentState.forecastSats,
+                        forecastSatsLocked = correspondingSat?.lockedSatellites ?: currentState.forecastSatsLocked
+                    )
+                }
+            }
         }
     }
 
@@ -326,16 +342,26 @@ class WeatherViewModel(
                                 data.latitude, 
                                 data.longitude, 
                                 data.kpValue?.toFloat() ?: 0f,
-                                filteredTle
+                                filteredTle,
+                                currentState.useGps,
+                                currentState.useGlonass,
+                                currentState.useGalileo,
+                                currentState.useBeidou
                             )
                             repository.updateSatelliteForecasts(satForecasts)
                             
-                            val first = satForecasts.firstOrNull()
-                            _uiState.update { 
-                                it.copy(
+                            _uiState.update { currentState ->
+                                val selectedHour = currentState.hourlyForecast.getOrNull(currentState.selectedIndex)
+                                val correspondingSat = if (selectedHour != null) {
+                                    satForecasts.minByOrNull { kotlin.math.abs(it.timestamp - selectedHour.timestamp) }
+                                } else {
+                                    satForecasts.firstOrNull()
+                                }
+
+                                currentState.copy(
                                     satelliteForecast = satForecasts,
-                                    forecastSats = first?.availableSatellites ?: it.forecastSats,
-                                    forecastSatsLocked = first?.lockedSatellites ?: it.forecastSatsLocked
+                                    forecastSats = correspondingSat?.availableSatellites ?: currentState.forecastSats,
+                                    forecastSatsLocked = correspondingSat?.lockedSatellites ?: currentState.forecastSatsLocked
                                 ) 
                             }
                         } catch (e: Exception) {
@@ -370,6 +396,12 @@ class WeatherViewModel(
                         val idx = updatedState.selectedIndex
                         if (forecast.isNotEmpty() && idx in forecast.indices) {
                             val selected = forecast[idx]
+                            
+                            // Find corresponding satellite forecast from existing state data
+                            val satForecast = updatedState.satelliteForecast.minByOrNull { 
+                                kotlin.math.abs(it.timestamp - selected.timestamp) 
+                            }
+
                             val (safety, resId, color) = calculateSafetyStatus(
                                 selected.wind, selected.gusts, selected.kp.toDoubleOrNull(), data.currentBz, selected.precip, selected.temp
                             )
@@ -391,6 +423,8 @@ class WeatherViewModel(
                                 visibility = selected.visibility,
                                 weatherIcon = selected.weatherIcon,
                                 precip = selected.precip,
+                                forecastSats = satForecast?.availableSatellites ?: updatedState.forecastSats,
+                                forecastSatsLocked = satForecast?.lockedSatellites ?: updatedState.forecastSatsLocked,
                                 isSafe = safety,
                                 statusTextResId = resId,
                                 statusColor = color
@@ -434,7 +468,19 @@ class WeatherViewModel(
     }
 
     fun updateSatellites(visible: Int, locked: Int) {
-        _uiState.update { it.copy(sats = visible, satsLocked = locked) }
+        val state = _uiState.value
+        val activeConstellations = (if(state.useGps) 1 else 0) + (if(state.useGlonass) 1 else 0) + (if(state.useGalileo) 1 else 0) + (if(state.useBeidou) 1 else 0)
+        
+        // Dynamic cap for live data:
+        // ~40 visible / ~32 locked with 4 constellations
+        // ~30 visible / ~24 locked with 3 constellations
+        val maxVis = (activeConstellations * 11).coerceAtLeast(12)
+        val maxLock = (activeConstellations * 8).coerceAtLeast(8)
+
+        _uiState.update { it.copy(
+            sats = visible.coerceAtMost(maxVis), 
+            satsLocked = locked.coerceAtMost(maxLock)
+        ) }
     }
 
     fun updateDeviceAzimuth(azimuth: Float) {

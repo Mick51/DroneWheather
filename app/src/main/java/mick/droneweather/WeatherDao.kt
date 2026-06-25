@@ -32,6 +32,9 @@ interface WeatherDao {
     @Query("SELECT * FROM satellite_forecast ORDER BY timestamp ASC")
     suspend fun getSatelliteForecast(): List<SatelliteForecast>
 
+    @Query("SELECT * FROM satellite_forecast ORDER BY timestamp ASC")
+    fun getSatelliteForecastFlow(): kotlinx.coroutines.flow.Flow<List<SatelliteForecast>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSatelliteForecasts(forecasts: List<SatelliteForecast>)
 
@@ -40,6 +43,9 @@ interface WeatherDao {
 
     @Query("SELECT * FROM tle_data")
     suspend fun getAllTleData(): List<TleData>
+
+    @Query("DELETE FROM tle_data")
+    suspend fun clearTleData()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTleData(tleList: List<TleData>)
