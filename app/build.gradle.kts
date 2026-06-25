@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "mick.droneweather"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "mick.droneweather"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 2
         versionName = "1.1 Beta"
 
@@ -40,26 +40,26 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(libs.coil.compose)
     ksp(libs.room.compiler)
-    implementation("com.google.maps.android:maps-compose:4.4.1")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation("org.osmdroid:osmdroid-android:6.1.18")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("org.orekit:orekit:12.1.2")
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.osmdroid)
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.orekit)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
