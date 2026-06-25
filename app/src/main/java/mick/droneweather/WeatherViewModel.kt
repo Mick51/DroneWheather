@@ -135,7 +135,7 @@ data class WeatherUiState(
     val selectedSource: WeatherSource = WeatherSource.DEFAULT,
 
     // App Settings
-    val language: String = java.util.Locale.getDefault().language.let { lang ->
+    val language: String = Locale.getDefault().language.let { lang ->
         if (lang in listOf("fr", "en", "pl")) lang else "en"
     },
     val timeFormat24h: Boolean = true, // Will be updated in MainActivity
@@ -220,7 +220,7 @@ class WeatherViewModel(
         return when (type) {
             "Vent" -> when {
                 doubleValue >= state.windMaxThreshold -> RedDanger
-                doubleValue >= state.windMaxThreshold * 0.6f -> YellowWarn
+                doubleValue >= (state.windMaxThreshold * 0.6f) -> YellowWarn
                 else -> GreenSafe
             }
             "Gusts" -> when {
@@ -363,7 +363,7 @@ class WeatherViewModel(
                         isLoading = false,
                         lastUpdate = data.lastUpdated,
                         hourlyForecast = forecast,
-                        selectedIndex = forecast.indexOfFirst { it.isNow }.takeIf { it != -1 } 
+                        selectedIndex = forecast.indexOfFirst { it.isNow }.takeIf { idx -> idx != -1 } 
                             ?: forecast.indexOfFirst { item -> item.timestamp >= now }.coerceAtLeast(0)
                     ).let { state ->
                         // Initialize selected hour data
@@ -526,7 +526,7 @@ class WeatherViewModel(
             
             // Find corresponding satellite forecast
             val satForecast = state.satelliteForecast.minByOrNull { 
-                Math.abs(it.timestamp - item.timestamp) 
+                kotlin.math.abs(it.timestamp - item.timestamp) 
             }
             
             val (safety, resId, color) = calculateSafetyStatus(
@@ -597,7 +597,7 @@ class WeatherViewModel(
                 try {
                     val addresses = geocoder.getFromLocation(lat, lon, 1)
                     addresses?.firstOrNull()?.locality ?: "Inconnue"
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     "Erreur Ville"
                 }
             }

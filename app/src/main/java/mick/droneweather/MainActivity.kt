@@ -24,8 +24,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
-import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -40,13 +38,13 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -143,10 +141,10 @@ fun WindDirectionIndicator(
 @Composable
 fun MetricCard(
     title: String,
+    modifier: Modifier = Modifier,
     value: String = "",
     backgroundColor: Color = GreenSafe,
     onClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
     isLandscape: Boolean = false,
     content: @Composable (ColumnScope.() -> Unit)? = null
 ) {
@@ -203,7 +201,7 @@ fun MetricCard(
 }
 
 @Composable
-fun SunTimesCard(sunrise: String, sunset: String, isLandscape: Boolean = false, onClick: () -> Unit = {}, modifier: Modifier = Modifier) {
+fun SunTimesCard(sunrise: String, sunset: String, modifier: Modifier = Modifier, isLandscape: Boolean = false, onClick: () -> Unit = {}) {
     MetricCard(
         title = stringResource(R.string.metric_sunrise),
         modifier = modifier,
@@ -240,12 +238,11 @@ fun InteractiveForecastSelector(
 
     // 1. Group points by day and prepare colors for the heatmap gradient
     val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-    val daysData = remember(uiState.hourlyForecast, uiState.language) {
+            val daysData = remember(uiState.hourlyForecast, uiState.language) {
         uiState.hourlyForecast.groupBy { 
             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.timestamp * 1000))
         }.map { (dateString, points) ->
-            val isToday = dateString == todayStr
-            val dayName = if (isToday) {
+            val dayName = if (dateString == todayStr) {
                 // We'll handle "Today" in the UI part using stringResource
                 "TODAY" 
             } else {
@@ -262,7 +259,6 @@ fun InteractiveForecastSelector(
                 val date = dateString
                 val name = dayName
                 val colors = dayColors
-                val isToday = isToday
             }
         }
     }
@@ -288,7 +284,7 @@ fun InteractiveForecastSelector(
         label = "SliderAnimation"
     )
 
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptic = LocalHapticFeedback.current
 
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
         // --- 1. Hour Selector Slider (Top) ---
@@ -680,7 +676,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                                         showSearchDialog = false
                                     }
                                 }),
-                                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = NeonGreen,
                                     unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
                                     cursorColor = NeonGreen
@@ -731,11 +727,11 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
         Column(modifier = Modifier.weight(metricsWeight).padding(vertical = if (isLandscape) 1.dp else 4.dp)) {
             if (isLandscape) {
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(stringResource(R.string.metric_weather), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_weather); detailDesc = context.getString(R.string.desc_clouds); showDetail = true }) {
+                    MetricCard(title = stringResource(R.string.metric_weather), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_weather); detailDesc = context.getString(R.string.desc_clouds); showDetail = true }) {
                         AsyncImage(model = "https://openweathermap.org/img/wn/${uiState.weatherIcon ?: "01d"}@2x.png", contentDescription = null, modifier = Modifier.size(28.dp))
                     }
-                    MetricCard(stringResource(R.string.metric_wind_air), "${uiState.windSpeed} km/h", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_gusts), "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_wind_air), value = "${uiState.windSpeed} km/h", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
                     Card(modifier = Modifier.weight(1f).padding(1.dp).fillMaxSize(), colors = CardDefaults.cardColors(containerColor = GreenSafe), shape = RoundedCornerShape(8.dp), onClick = { detailTitle = context.getString(R.string.metric_wind_dir); detailDesc = context.getString(R.string.desc_wind_dir); showDetail = true }) {
                         Column(modifier = Modifier.fillMaxSize().padding(2.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = stringResource(R.string.metric_wind_dir), style = MaterialTheme.typography.labelSmall, color = Color.Black.copy(alpha = 0.6f), maxLines = 1)
@@ -745,24 +741,24 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     }
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(stringResource(R.string.metric_precip), "${uiState.precip}%", backgroundColor = viewModel.getCardColor("Precip", uiState.precip), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_precip); detailDesc = context.getString(R.string.desc_precip); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_clouds), "${uiState.clouds}%", backgroundColor = viewModel.getCardColor("Cloud", uiState.clouds), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_clouds); detailDesc = context.getString(R.string.desc_clouds); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_visibility), "${uiState.visibility} km", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_kp_live), uiState.kpValue?.let { String.format(Locale.US, "%.1f", it) } ?: "N/A", backgroundColor = viewModel.getCardColor("Kp", uiState.kpValue), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_kp_live); detailDesc = context.getString(R.string.desc_kp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_precip), value = "${uiState.precip}%", backgroundColor = viewModel.getCardColor("Precip", uiState.precip), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_precip); detailDesc = context.getString(R.string.desc_precip); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_clouds), value = "${uiState.clouds}%", backgroundColor = viewModel.getCardColor("Cloud", uiState.clouds), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_clouds); detailDesc = context.getString(R.string.desc_clouds); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_visibility), value = "${uiState.visibility} km", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_kp_live), value = uiState.kpValue?.let { String.format(Locale.US, "%.1f", it) } ?: "N/A", backgroundColor = viewModel.getCardColor("Kp", uiState.kpValue), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_kp_live); detailDesc = context.getString(R.string.desc_kp); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature} \u00B0C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_sats_vis), "${uiState.forecastSats}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_sats_lock), "${uiState.forecastSatsLocked}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
+                    SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_sats_vis), value = uiState.forecastSats.toString(), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_sats_lock), value = "${uiState.forecastSatsLocked}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                 }
             } else {
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(stringResource(R.string.metric_weather), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_weather); detailDesc = context.getString(R.string.desc_clouds); showDetail = true }) {
+                    MetricCard(title = stringResource(R.string.metric_weather), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_weather); detailDesc = context.getString(R.string.desc_clouds); showDetail = true }) {
                         AsyncImage(model = "https://openweathermap.org/img/wn/${uiState.weatherIcon ?: "01d"}@2x.png", contentDescription = null, modifier = Modifier.size(40.dp))
                     }
-                    MetricCard(stringResource(R.string.metric_wind_air), "${uiState.windSpeed} km/h", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_gusts), "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_gusts); detailDesc = context.getString(R.string.desc_gusts); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_wind_air), value = "${uiState.windSpeed} km/h", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_gusts); detailDesc = context.getString(R.string.desc_gusts); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     Card(modifier = Modifier.weight(1f).padding(2.dp).fillMaxSize(), colors = CardDefaults.cardColors(containerColor = GreenSafe), shape = RoundedCornerShape(8.dp), onClick = { detailTitle = context.getString(R.string.metric_wind_dir); detailDesc = context.getString(R.string.desc_wind_dir); showDetail = true }) {
@@ -772,18 +768,18 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                             Text(text = getCardinalDirection(uiState.windDeg), style = MaterialTheme.typography.labelMedium, color = Color.Black, maxLines = 1)
                         }
                     }
-                    MetricCard(stringResource(R.string.metric_precip), "${uiState.precip}%", backgroundColor = viewModel.getCardColor("Precip", uiState.precip), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_precip); detailDesc = context.getString(R.string.desc_precip); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_clouds), "${uiState.clouds}%", backgroundColor = viewModel.getCardColor("Cloud", uiState.clouds), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_clouds); detailDesc = context.getString(R.string.desc_clouds); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_precip), value = "${uiState.precip}%", backgroundColor = viewModel.getCardColor("Precip", uiState.precip), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_precip); detailDesc = context.getString(R.string.desc_precip); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_clouds), value = "${uiState.clouds}%", backgroundColor = viewModel.getCardColor("Cloud", uiState.clouds), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_clouds); detailDesc = context.getString(R.string.desc_clouds); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(stringResource(R.string.metric_visibility), "${uiState.visibility} km", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_kp_live), uiState.kpValue?.let { String.format(Locale.US, "%.1f", it) } ?: "N/A", backgroundColor = viewModel.getCardColor("Kp", uiState.kpValue), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_kp_live); detailDesc = context.getString(R.string.desc_kp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_visibility), value = "${uiState.visibility} km", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_kp_live), value = uiState.kpValue?.let { String.format(Locale.US, "%.1f", it) } ?: "N/A", backgroundColor = viewModel.getCardColor("Kp", uiState.kpValue), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_kp_live); detailDesc = context.getString(R.string.desc_kp); showDetail = true })
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature} \u00B0C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_sats_vis), "${uiState.forecastSats}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_sats_lock), "${uiState.forecastSatsLocked}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_sats_vis), value = uiState.forecastSats.toString(), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_sats_lock), value = "${uiState.forecastSatsLocked}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                 }
             }
         }
@@ -860,7 +856,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
                     NavItem(Icons.Default.SettingsInputAntenna, uiState.currentTab == AppTab.DASHBOARD) { viewModel.setTab(AppTab.DASHBOARD) }
                     NavItem(Icons.Default.Build, uiState.currentTab == AppTab.TOOLS) { viewModel.setTab(AppTab.TOOLS) }
                     NavItem(Icons.Default.Group, uiState.currentTab == AppTab.COMMUNITY) { viewModel.setTab(AppTab.COMMUNITY) }
-                    NavItem(Icons.Default.Help, uiState.currentTab == AppTab.HELP) { viewModel.setTab(AppTab.HELP) }
+                    NavItem(Icons.AutoMirrored.Filled.Help, uiState.currentTab == AppTab.HELP) { viewModel.setTab(AppTab.HELP) }
                     NavItem(Icons.Default.Settings, uiState.currentTab == AppTab.SETTINGS) { viewModel.setTab(AppTab.SETTINGS) }
                 }
             }
@@ -890,9 +886,6 @@ fun ToolScreen(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var activeTool by remember { mutableStateOf<String?>(null) }
     
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
-
     BackHandler(enabled = activeTool != null) {
         activeTool = null
     }
@@ -900,7 +893,7 @@ fun ToolScreen(viewModel: WeatherViewModel) {
     val menuItems = listOf(
         Triple(R.string.tool_forecast_table, "table", Icons.Default.GridOn to Color(0xFF00B0FF)),
         Triple(R.string.tool_wind_profile, "wind_profile", Icons.Default.AlignVerticalBottom to Color(0xFFFFB300)),
-        Triple(R.string.tool_checklist, "checklist", Icons.Default.FactCheck to Color(0xFF4CAF50)),
+        Triple(R.string.tool_checklist, "checklist", Icons.AutoMirrored.Filled.FactCheck to Color(0xFF4CAF50)),
         Triple(R.string.tool_wind_compass, "compass", Icons.Default.Explore to Color(0xFF00B0FF)),
         Triple(R.string.tool_safe_zones, "map", Icons.Default.Public to Color(0xFFF44336))
     )
@@ -955,7 +948,7 @@ fun ToolScreen(viewModel: WeatherViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = { activeTool = null }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
                         }
                         Text(
                             text = stringResource(menuItems.first { it.second == tool }.first),
@@ -1421,7 +1414,7 @@ fun HelpScreen() {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Default.Help,
+            imageVector = Icons.AutoMirrored.Filled.Help,
             contentDescription = null,
             tint = Color(0xFF00B0FF),
             modifier = Modifier.size(64.dp)
@@ -1494,9 +1487,6 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var expandedSection by remember { mutableStateOf<String?>(null) }
     
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
-
     Column(modifier = Modifier.fillMaxSize().background(AppBackground).padding(16.dp)) {
         Text(
             text = stringResource(R.string.tab_settings),
