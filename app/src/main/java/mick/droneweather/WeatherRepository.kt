@@ -105,7 +105,7 @@ class WeatherRepository(
         val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
 
         if (!force && !isExpired) {
-            return@coroutineScope cached!!
+            return@coroutineScope cached
         }
 
         try {
