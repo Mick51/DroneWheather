@@ -289,10 +289,6 @@ class WeatherRepository(
         }
     }
 
-    suspend fun getSatelliteForecast(): List<SatelliteForecast> {
-        return weatherDao.getSatelliteForecast()
-    }
-
     fun getSatelliteForecastFlow(): kotlinx.coroutines.flow.Flow<List<SatelliteForecast>> {
         return weatherDao.getSatelliteForecastFlow()
     }

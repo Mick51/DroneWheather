@@ -30,9 +30,6 @@ interface WeatherDao {
     suspend fun updateCache(data: WeatherCache)
 
     @Query("SELECT * FROM satellite_forecast ORDER BY timestamp ASC")
-    suspend fun getSatelliteForecast(): List<SatelliteForecast>
-
-    @Query("SELECT * FROM satellite_forecast ORDER BY timestamp ASC")
     fun getSatelliteForecastFlow(): kotlinx.coroutines.flow.Flow<List<SatelliteForecast>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

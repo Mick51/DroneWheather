@@ -89,7 +89,7 @@ class SatellitePredictor {
                         locked++
                     }
                 }
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
         }
 
         val finalVisible = if (visible == 0 && tleList.isEmpty()) (maxVisible - 5..maxVisible).random() else visible.coerceAtMost(maxVisible)
