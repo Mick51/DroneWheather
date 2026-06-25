@@ -279,7 +279,7 @@ fun InteractiveForecastSelector(
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
-    val locale = Locale.getDefault()
+    val locale = configuration.locales[0]
 
     // 1. Group points by day and prepare colors for the heatmap gradient
     val daysWithHours = remember(uiState.hourlyForecast) {
@@ -1095,9 +1095,11 @@ fun SatelliteStatsScreen(uiState: WeatherUiState) {
 
 @Composable
 fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
+    val locale = LocalConfiguration.current.locales[0]
     val groupedForecast = remember(uiState.hourlyForecast) {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", locale)
         uiState.hourlyForecast.groupBy {
-            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.timestamp * 1000))
+            sdf.format(Date(it.timestamp * 1000))
         }
     }
 
@@ -1122,10 +1124,10 @@ fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             groupedForecast.forEach { (date, hours) ->
                 item {
-                    val dayLabel = if (date == SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())) {
+                    val dayLabel = if (date == SimpleDateFormat("yyyy-MM-dd", locale).format(Date())) {
                         stringResource(R.string.today)
                     } else {
-                        SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(Date(hours.first().timestamp * 1000))
+                        SimpleDateFormat("EEEE d MMMM", locale).format(Date(hours.first().timestamp * 1000))
                             .replaceFirstChar { it.uppercase() }
                     }
                     Text(
