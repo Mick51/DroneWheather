@@ -141,9 +141,9 @@ class WeatherRepository(
                     async { try { source.getKpIndex() } catch (e: Exception) { 0.0 } }
                 }.awaitAll().maxOrNull() ?: 0.0
             }
-            val plasmaDeferred = async { try { kpApi.getSolarWind() } catch (e: Exception) { emptyList<List<Any>>() } }
-            val magDeferred = async { try { kpApi.getMagData() } catch (e: Exception) { emptyList<List<Any>>() } }
-            val kpForecastDeferred = async { try { kpApi.getKpForecast() } catch (e: Exception) { null } }
+            val plasmaDeferred = async { try { kpApi.getSolarWind() } catch (_: Exception) { emptyList() } }
+            val magDeferred = async { try { kpApi.getMagData() } catch (_: Exception) { emptyList() } }
+            val kpForecastDeferred = async { try { kpApi.getKpForecast() } catch (_: Exception) { null } }
 
             val response = weatherDeferred.await()
             val newKpValue = kpDeferred.await()
@@ -316,7 +316,7 @@ class WeatherRepository(
                 val timeTag = entry["time_tag"]?.toString() ?: continue
                 val kpVal = entry["kp"]?.toString() ?: entry["kp_index"]?.toString() ?: continue
                 val rowDate = try { sdfT.parse(timeTag) } catch(e: Exception) { sdfSpace.parse(timeTag) } ?: continue
-                val diff = Math.abs(rowDate.time - targetDate.time)
+                val diff = kotlin.math.abs(rowDate.time - targetDate.time)
                 if (diff < minDiff) {
                     minDiff = diff
                     closestKp = kpVal

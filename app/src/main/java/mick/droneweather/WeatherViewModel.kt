@@ -351,29 +351,29 @@ class WeatherViewModel(
                 val forecast = parseForecast(data.forecastJson)
                 val now = System.currentTimeMillis() / 1000
 
-                _uiState.update { 
-                    it.copy(
+                _uiState.update { state ->
+                    state.copy(
                         currentBz = data.currentBz,
                         solarWindSpeed = data.solarWindSpeed,
                         solarWindDensity = data.solarWindDensity,
                         sunrise = data.sunrise,
                         sunset = data.sunset,
                         cityNameState = data.cityName,
-                        mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else it.mapCenter,
+                        mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else state.mapCenter,
                         isLoading = false,
                         lastUpdate = data.lastUpdated,
                         hourlyForecast = forecast,
                         selectedIndex = forecast.indexOfFirst { it.isNow }.takeIf { idx -> idx != -1 } 
                             ?: forecast.indexOfFirst { item -> item.timestamp >= now }.coerceAtLeast(0)
-                    ).let { state ->
+                    ).let { updatedState ->
                         // Initialize selected hour data
-                        val idx = state.selectedIndex
+                        val idx = updatedState.selectedIndex
                         if (forecast.isNotEmpty() && idx in forecast.indices) {
                             val selected = forecast[idx]
                             val (safety, resId, color) = calculateSafetyStatus(
                                 selected.wind, selected.gusts, selected.kp.toDoubleOrNull(), data.currentBz, selected.precip, selected.temp
                             )
-                            state.copy(
+                            updatedState.copy(
                                 windSpeed = selected.wind,
                                 wind80m = selected.wind80m,
                                 wind120m = selected.wind120m,
@@ -396,7 +396,7 @@ class WeatherViewModel(
                                 statusColor = color
                             )
                         } else {
-                            state.copy(
+                            updatedState.copy(
                                 windSpeed = data.windSpeed,
                                 wind80m = data.wind80m,
                                 wind120m = data.wind120m,

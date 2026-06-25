@@ -664,7 +664,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(stringResource(R.string.search_dialog_title), color = Color.White, style = MaterialTheme.typography.titleMedium)
-                            androidx.compose.material3.OutlinedTextField(
+                            OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
                                 modifier = Modifier.fillMaxWidth(),
@@ -1546,7 +1546,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
 
                 // 2. Time Format
                 var timeExpanded by remember { mutableStateOf(false) }
-                SettingsSelectorRow(stringResource(R.string.settings_time_format), if(uiState.timeFormat24h) stringResource(R.string.settings_time_24h) else stringResource(R.string.settings_time_12h), timeExpanded, { timeExpanded = !timeExpanded })
+                SettingsSelectorRow(stringResource(R.string.settings_time_format), if(uiState.timeFormat24h) stringResource(R.string.settings_time_24h) else stringResource(R.string.settings_time_12h), timeExpanded) { timeExpanded = !timeExpanded }
                 DropdownMenu(expanded = timeExpanded, onDismissRequest = { timeExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.settings_time_24h), color = Color.White) }, onClick = { viewModel.updateSettings(timeFormat24h = true); timeExpanded = false })
                     DropdownMenuItem(text = { Text(stringResource(R.string.settings_time_12h), color = Color.White) }, onClick = { viewModel.updateSettings(timeFormat24h = false); timeExpanded = false })
