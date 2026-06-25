@@ -1,3 +1,19 @@
+﻿/*
+ * Copyright (C) 2026 Mick
+ *
+ * Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+ * selon les termes de la Licence Publique Générale GNU telle que publiée par
+ * la Free Software Foundation, soit la version 3 de la licence, ou (au choix)
+ * toute version ultérieure.
+ *
+ * Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE GARANTIE ;
+ * sans même la garantie implicite de COMMERCIALISATION ou D'ADÉQUATION À UN USAGE PARTICULIER.
+ * Voir la Licence Publique Générale GNU pour plus de détails.
+ *
+ * Vous devriez avoir reçu une copie de la Licence Publique Générale GNU avec ce programme.
+ * Sinon, voir <https://www.gnu.org/licenses/>.
+ */
+
 package mick.droneweather
 
 import android.util.Log
@@ -106,7 +122,7 @@ class WeatherRepository(
                 resolvedCityName = city
             } else {
                 val geoResponse = RetrofitInstance.geocodingApi.search(city)
-                val firstResult = geoResponse.results?.firstOrNull() ?: throw Exception("Ville non trouvÃ©e")
+                val firstResult = geoResponse.results?.firstOrNull() ?: throw Exception("Ville non trouvÃƒÂ©e")
                 targetLat = firstResult.latitude
                 targetLon = firstResult.longitude
                 resolvedCityName = firstResult.name
@@ -310,3 +326,4 @@ class WeatherRepository(
         return if (minDiff > 12 * 60 * 60 * 1000L) "N/A" else closestKp
     }
 }
+

@@ -1,3 +1,19 @@
+﻿/*
+ * Copyright (C) 2026 Mick
+ *
+ * Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+ * selon les termes de la Licence Publique Générale GNU telle que publiée par
+ * la Free Software Foundation, soit la version 3 de la licence, ou (au choix)
+ * toute version ultérieure.
+ *
+ * Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE GARANTIE ;
+ * sans même la garantie implicite de COMMERCIALISATION ou D'ADÉQUATION À UN USAGE PARTICULIER.
+ * Voir la Licence Publique Générale GNU pour plus de détails.
+ *
+ * Vous devriez avoir reçu une copie de la Licence Publique Générale GNU avec ce programme.
+ * Sinon, voir <https://www.gnu.org/licenses/>.
+ */
+
 package mick.droneweather
 
 import android.annotation.SuppressLint
@@ -13,7 +29,7 @@ class GnssManager(private val context: Context) {
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private var gnssStatusCallback: GnssStatus.Callback? = null
     
-    // Un LocationListener est nÃ©cessaire pour "rÃ©veiller" le GPS sur certains appareils
+    // Un LocationListener est nÃƒÂ©cessaire pour "rÃƒÂ©veiller" le GPS sur certains appareils
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: android.location.Location) {}
         @Deprecated("Deprecated in Java")
@@ -41,7 +57,7 @@ class GnssManager(private val context: Context) {
                 
                 for (i in 0 until totalCount) {
                     val constellation = status.getConstellationType(i)
-                    // Filtrer selon les paramÃ¨tres utilisateur
+                    // Filtrer selon les paramÃƒÂ¨tres utilisateur
                     val isTargetConstellation = when (constellation) {
                         GnssStatus.CONSTELLATION_GPS -> useGps
                         GnssStatus.CONSTELLATION_GLONASS -> useGlonass
@@ -77,7 +93,7 @@ class GnssManager(private val context: Context) {
                 locationManager.registerGnssStatusCallback(gnssStatusCallback!!)
             }
             
-            // Demander des mises Ã  jour de localisation lÃ©gÃ¨res pour forcer l'activation du GNSS
+            // Demander des mises ÃƒÂ  jour de localisation lÃƒÂ©gÃƒÂ¨res pour forcer l'activation du GNSS
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 1000L, // 1 seconde
@@ -102,3 +118,4 @@ class GnssManager(private val context: Context) {
         }
     }
 }
+

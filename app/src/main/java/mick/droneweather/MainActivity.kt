@@ -1,3 +1,19 @@
+﻿/*
+ * Copyright (C) 2026 Mick
+ *
+ * Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+ * selon les termes de la Licence Publique Générale GNU telle que publiée par
+ * la Free Software Foundation, soit la version 3 de la licence, ou (au choix)
+ * toute version ultérieure.
+ *
+ * Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE GARANTIE ;
+ * sans même la garantie implicite de COMMERCIALISATION ou D'ADÉQUATION À UN USAGE PARTICULIER.
+ * Voir la Licence Publique Générale GNU pour plus de détails.
+ *
+ * Vous devriez avoir reçu une copie de la Licence Publique Générale GNU avec ce programme.
+ * Sinon, voir <https://www.gnu.org/licenses/>.
+ */
+
 package mick.droneweather
 
 import android.Manifest
@@ -382,7 +398,7 @@ fun InteractiveForecastSelector(
                         .background(Color(0xFF00B0FF), CircleShape)
                 )
 
-                // Bulle rÃ©duite Ã  30dp
+                // Bulle rÃƒÂ©duite ÃƒÂ  30dp
                 Surface(
                     color = Color(0xFF00B0FF),
                     shape = CircleShape,
@@ -392,7 +408,7 @@ fun InteractiveForecastSelector(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         val currentStep = sliderValue.roundToInt().coerceIn(0, dayHours.size - 1)
-                        // Heure uniquement, adaptÃ©e au format
+                        // Heure uniquement, adaptÃƒÂ©e au format
                         val displayTime = if (uiState.timeFormat24h) {
                             dayHours[currentStep].time.split(":")[0] + "H"
                         } else {
@@ -454,7 +470,7 @@ fun InteractiveForecastSelector(
                         }
                     }
                 } else {
-                    // Landscape (DJI RC2): Capsules horizontales colorÃ©es et compactes
+                    // Landscape (DJI RC2): Capsules horizontales colorÃƒÂ©es et compactes
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -736,7 +752,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
-                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature}Â°C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature}Ã‚Â°C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_vis), "${uiState.forecastSats}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_lock), "${uiState.forecastSatsLocked}", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                 }
@@ -765,7 +781,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature}Â°C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(stringResource(R.string.metric_temperature), "${uiState.temperature}Ã‚Â°C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_vis), "${uiState.forecastSats}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                     MetricCard(stringResource(R.string.metric_sats_lock), "${uiState.forecastSatsLocked}", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true })
                 }
@@ -832,7 +848,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
 
     LaunchedEffect(Unit) {
         permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-        // Initialiser le format 24h selon les paramÃ¨tres du systÃ¨me
+        // Initialiser le format 24h selon les paramÃƒÂ¨tres du systÃƒÂ¨me
         viewModel.updateSettings(timeFormat24h = android.text.format.DateFormat.is24HourFormat(context))
     }
 
@@ -1030,7 +1046,7 @@ fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         }
 
                         // Data Cells with Colors
-                        TableCell(text = "${hour.temp}Â°", color = viewModel.getCardColor("Temp", hour.temp), modifier = Modifier.weight(1f))
+                        TableCell(text = "${hour.temp}Ã‚Â°", color = viewModel.getCardColor("Temp", hour.temp), modifier = Modifier.weight(1f))
                         TableCell(text = hour.wind, color = viewModel.getCardColor("Vent", hour.wind), modifier = Modifier.weight(1f))
                         TableCell(text = hour.gusts, color = viewModel.getCardColor("Gusts", hour.gusts), modifier = Modifier.weight(1f))
                         TableCell(text = hour.kp, color = viewModel.getCardColor("Kp", hour.kp.toDoubleOrNull()), modifier = Modifier.weight(1f))
@@ -1141,7 +1157,7 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                             modifier = Modifier.weight(1f).size(if (isLandscape) 14.dp else 16.dp).rotate(uiState.windDeg.toFloat() - 90f),
                             tint = Color.Black
                         )
-                        Text("${uiState.temperature}Â°C", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
+                        Text("${uiState.temperature}Ã‚Â°C", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
                     }
                     HorizontalDivider(color = Color.Black.copy(alpha = 0.1f), thickness = 0.5.dp)
                 }
@@ -1195,12 +1211,12 @@ fun ChecklistScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
 
 @Composable
 fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
-    val deviceAzimuth = uiState.deviceAzimuth // Orientation du tÃ©lÃ©phone (0 = Nord)
+    val deviceAzimuth = uiState.deviceAzimuth // Orientation du tÃƒÂ©lÃƒÂ©phone (0 = Nord)
     val windDeg = uiState.windDeg.toFloat() // Direction du vent (0 = vient du Nord)
     
-    // L'angle de l'aiguille bleue (vent) par rapport au tÃ©lÃ©phone
-    // On ajoute 180 car l'icÃ´ne Navigation pointe vers le haut (0Â°), 
-    // et on veut montrer d'oÃ¹ vient le vent ou vers oÃ¹ il va.
+    // L'angle de l'aiguille bleue (vent) par rapport au tÃƒÂ©lÃƒÂ©phone
+    // On ajoute 180 car l'icÃƒÂ´ne Navigation pointe vers le haut (0Ã‚Â°), 
+    // et on veut montrer d'oÃƒÂ¹ vient le vent ou vers oÃƒÂ¹ il va.
     val relativeWindAngle = windDeg - deviceAzimuth
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1245,7 +1261,7 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${uiState.windDeg}Â°",
+                        text = "${uiState.windDeg}Ã‚Â°",
                         color = Color.Gray,
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -1327,8 +1343,8 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                BadgeInfo("MAG: ${uiState.windDeg}Â°", Color(0xFF00B0FF).copy(alpha = 0.2f), Color(0xFF00B0FF))
-                BadgeInfo("TRUE: ${uiState.windDeg}Â°", Color(0xFF4CAF50).copy(alpha = 0.2f), Color(0xFF4CAF50))
+                BadgeInfo("MAG: ${uiState.windDeg}Ã‚Â°", Color(0xFF00B0FF).copy(alpha = 0.2f), Color(0xFF00B0FF))
+                BadgeInfo("TRUE: ${uiState.windDeg}Ã‚Â°", Color(0xFF4CAF50).copy(alpha = 0.2f), Color(0xFF4CAF50))
             }
         }
 
@@ -1378,13 +1394,13 @@ fun SafeZoneMapScreen(uiState: WeatherUiState) {
                         displayZoomControls = false
                         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         cacheMode = WebSettings.LOAD_DEFAULT
-                        // User agent mobile rÃ©cent pour Ã©viter le blocage
+                        // User agent mobile rÃƒÂ©cent pour ÃƒÂ©viter le blocage
                         userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
                     }
                     
                     val lon = uiState.mapCenter.longitude
                     val lat = uiState.mapCenter.latitude
-                    // URL directe simplifiÃ©e vers les restrictions UAS
+                    // URL directe simplifiÃƒÂ©e vers les restrictions UAS
                     val url = "https://www.geoportail.gouv.fr/carte?c=$lon,$lat&z=14&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR.CV::GEOPORTAIL:OGC:WMTS(1)&l1=TRANSPORTS.DRONES.RESTRICTIONS::GEOPORTAIL:OGC:WMTS(0.8)&permalink=yes"
                     loadUrl(url)
                 }
@@ -1489,13 +1505,13 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 // 1. Language
                 var langExpanded by remember { mutableStateOf(false) }
                 SettingsSelectorRow(stringResource(R.string.settings_language), when(uiState.language) {
-                    "fr" -> "FranÃ§ais"
+                    "fr" -> "FranÃƒÂ§ais"
                     "en" -> "English"
                     "pl" -> "Polski"
-                    else -> "FranÃ§ais"
+                    else -> "FranÃƒÂ§ais"
                 }, langExpanded, { langExpanded = !langExpanded })
                 DropdownMenu(expanded = langExpanded, onDismissRequest = { langExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
-                    DropdownMenuItem(text = { Text("FranÃ§ais", color = Color.White) }, onClick = { viewModel.updateSettings(language = "fr"); langExpanded = false })
+                    DropdownMenuItem(text = { Text("FranÃƒÂ§ais", color = Color.White) }, onClick = { viewModel.updateSettings(language = "fr"); langExpanded = false })
                     DropdownMenuItem(text = { Text("English", color = Color.White) }, onClick = { viewModel.updateSettings(language = "en"); langExpanded = false })
                     DropdownMenuItem(text = { Text("Polski", color = Color.White) }, onClick = { viewModel.updateSettings(language = "pl"); langExpanded = false })
                 }
@@ -1539,7 +1555,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
 
                 // --- Expandable Sections ---
 
-                // TempÃ©rature
+                // TempÃƒÂ©rature
                 SettingsExpandableRow(stringResource(R.string.settings_temp_label), expandedSection == "temp") { expandedSection = if (expandedSection == "temp") null else "temp" }
                 if (expandedSection == "temp") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1586,7 +1602,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     }
                 }
 
-                // VisibilitÃ©
+                // VisibilitÃƒÂ©
                 SettingsExpandableRow(stringResource(R.string.settings_visibility_label), expandedSection == "vis") { expandedSection = if (expandedSection == "vis") null else "vis" }
                 if (expandedSection == "vis") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1600,7 +1616,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     }
                 }
 
-                // MÃ©tÃ©o
+                // MÃƒÂ©tÃƒÂ©o
                 SettingsExpandableRow(stringResource(R.string.settings_weather_label), expandedSection == "meteo") { expandedSection = if (expandedSection == "meteo") null else "meteo" }
                 if (expandedSection == "meteo") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1620,7 +1636,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     }
                 }
 
-                // Affichage des DonnÃ©es
+                // Affichage des DonnÃƒÂ©es
                 SettingsExpandableRow(stringResource(R.string.settings_ui_label), expandedSection == "ui") { expandedSection = if (expandedSection == "ui") null else "ui" }
                 if (expandedSection == "ui") {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1744,3 +1760,4 @@ fun getCardinalDirection(degrees: Int): String {
     val directions = listOf("N", "NE", "E", "SE", "S", "SO", "O", "NO", "N")
     return directions[((degrees % 360) / 45.0).roundToInt()]
 }
+

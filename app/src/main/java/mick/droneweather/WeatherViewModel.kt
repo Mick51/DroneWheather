@@ -1,3 +1,19 @@
+﻿/*
+ * Copyright (C) 2026 Mick
+ *
+ * Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+ * selon les termes de la Licence Publique Générale GNU telle que publiée par
+ * la Free Software Foundation, soit la version 3 de la licence, ou (au choix)
+ * toute version ultérieure.
+ *
+ * Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE GARANTIE ;
+ * sans même la garantie implicite de COMMERCIALISATION ou D'ADÉQUATION À UN USAGE PARTICULIER.
+ * Voir la Licence Publique Générale GNU pour plus de détails.
+ *
+ * Vous devriez avoir reçu une copie de la Licence Publique Générale GNU avec ce programme.
+ * Sinon, voir <https://www.gnu.org/licenses/>.
+ */
+
 package mick.droneweather
 
 import android.annotation.SuppressLint
@@ -25,7 +41,7 @@ import kotlinx.coroutines.withContext
 import org.osmdroid.util.GeoPoint
 import java.util.Locale
 
-// --- ModÃ¨les d'Ã©tat ---
+// --- ModÃƒÂ¨les d'ÃƒÂ©tat ---
 
 data class HourlyForecast(
     val timestamp: Long,
@@ -141,12 +157,12 @@ data class WeatherUiState(
     val satelliteForecast: List<SatelliteForecast> = emptyList(),
 
     val checklist: List<ChecklistItem> = listOf(
-        ChecklistItem(text = "VÃ©rifier les autorisations et l'espace aÃ©rien"),
-        ChecklistItem(text = "Inspecter le drone (hÃ©lices, batterie et structure)"),
-        ChecklistItem(text = "Planifier l'itinÃ©raire"),
-        ChecklistItem(text = "VÃ©rifier les conditions mÃ©tÃ©orologiques"),
-        ChecklistItem(text = "Calibrer la boussole et dÃ©finir le point de dÃ©part"),
-        ChecklistItem(text = "S'assurer d'une zone de dÃ©collage sÃ»re")
+        ChecklistItem(text = "VÃƒÂ©rifier les autorisations et l'espace aÃƒÂ©rien"),
+        ChecklistItem(text = "Inspecter le drone (hÃƒÂ©lices, batterie et structure)"),
+        ChecklistItem(text = "Planifier l'itinÃƒÂ©raire"),
+        ChecklistItem(text = "VÃƒÂ©rifier les conditions mÃƒÂ©tÃƒÂ©orologiques"),
+        ChecklistItem(text = "Calibrer la boussole et dÃƒÂ©finir le point de dÃƒÂ©part"),
+        ChecklistItem(text = "S'assurer d'une zone de dÃƒÂ©collage sÃƒÂ»re")
     )
 )
 
@@ -406,7 +422,7 @@ class WeatherViewModel(
                     }
                 }
             } catch (e: Exception) {
-                Log.e("WeatherViewModel", "Erreur lors du rafraÃ®chissement: ${e.message}")
+                Log.e("WeatherViewModel", "Erreur lors du rafraÃƒÂ®chissement: ${e.message}")
                 _uiState.update { 
                     it.copy(
                         detailedError = e.message ?: "Erreur de connexion",
@@ -686,3 +702,4 @@ class WeatherViewModelFactory(
         throw IllegalArgumentException("ViewModel inconnu")
     }
 }
+
