@@ -38,10 +38,12 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.*
@@ -512,10 +514,10 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
             onDismissRequest = { showDetail = false },
             title = { Text(detailTitle, fontWeight = FontWeight.Bold) },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     if (detailTitle == stringResource(R.string.metric_wind_air)) {
-                        Text(stringResource(R.string.wind_by_altitude), style = MaterialTheme.typography.labelLarge, color = Color.Gray)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(stringResource(R.string.wind_by_altitude), style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(8.dp))
                         
                         val altitudes = listOf(
                             stringResource(R.string.altitude_ground) to uiState.windSpeed,
@@ -535,31 +537,31 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                             }
                             
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(alt, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(alt, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .size(width = 100.dp, height = 8.dp)
-                                            .background(Color.DarkGray, RoundedCornerShape(4.dp))
+                                            .size(width = 70.dp, height = 4.dp)
+                                            .background(Color.DarkGray, RoundedCornerShape(2.dp))
                                     ) {
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxHeight()
                                                 .fillMaxWidth(fraction = (speedVal.toFloat() / 40f).coerceIn(0f, 1f))
-                                                .background(color, RoundedCornerShape(4.dp))
+                                                .background(color, RoundedCornerShape(2.dp))
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("$speed km/h", color = color, fontWeight = FontWeight.Bold)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("$speed km/h", color = color, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(detailDesc, style = MaterialTheme.typography.bodySmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(detailDesc, style = MaterialTheme.typography.bodySmall, lineHeight = 14.sp)
                     } else {
                         Text(detailDesc)
                         if (detailTitle == stringResource(R.string.metric_sats_vis) || detailTitle == stringResource(R.string.metric_sats_lock)) {
@@ -885,6 +887,8 @@ fun NavItem(icon: androidx.compose.ui.graphics.vector.ImageVector, isSelected: B
 fun ToolScreen(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var activeTool by remember { mutableStateOf<String?>(null) }
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
     
     BackHandler(enabled = activeTool != null) {
         activeTool = null
@@ -895,20 +899,26 @@ fun ToolScreen(viewModel: WeatherViewModel) {
         Triple(R.string.tool_wind_profile, "wind_profile", Icons.Default.AlignVerticalBottom to Color(0xFFFFB300)),
         Triple(R.string.tool_checklist, "checklist", Icons.AutoMirrored.Filled.FactCheck to Color(0xFF4CAF50)),
         Triple(R.string.tool_wind_compass, "compass", Icons.Default.Explore to Color(0xFF00B0FF)),
-        Triple(R.string.tool_safe_zones, "map", Icons.Default.Public to Color(0xFFF44336))
+        Triple(R.string.tool_safe_zones, "map", Icons.Default.Public to Color(0xFFF44336)),
+        Triple(R.string.tool_sat_stats, "sat_stats", Icons.Default.SatelliteAlt to Color(0xFF9C27B0))
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.tab_tools),
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.tab_tools),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+            }
 
-            menuItems.forEach { (resId, id, iconColor) ->
+            items(menuItems) { (resId, id, iconColor) ->
                 val (icon, color) = iconColor
                 Row(
                     modifier = Modifier
@@ -944,32 +954,84 @@ fun ToolScreen(viewModel: WeatherViewModel) {
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(if (isLandscape) 4.dp else 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { activeTool = null }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                        IconButton(
+                            onClick = { activeTool = null },
+                            modifier = Modifier.size(if (isLandscape) 36.dp else 48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                                contentDescription = null, 
+                                tint = Color.White,
+                                modifier = Modifier.size(if (isLandscape) 20.dp else 24.dp)
+                            )
                         }
                         Text(
-                            text = stringResource(menuItems.first { it.second == tool }.first),
-                            style = MaterialTheme.typography.titleLarge,
+                            text = stringResource(menuItems.find { it.second == tool }?.first ?: R.string.tab_tools),
+                            style = if (isLandscape) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
                             color = Color.White,
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
 
-                    Box(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
+                    Box(modifier = Modifier.weight(1f).padding(top = if (isLandscape) 0.dp else 8.dp)) {
                         when (tool) {
                             "table" -> ForecastTable(uiState, viewModel)
                             "wind_profile" -> WindProfileScreen(uiState, viewModel)
                             "checklist" -> ChecklistScreen(uiState, viewModel)
                             "compass" -> WindCompassScreen(uiState, viewModel)
                             "map" -> SafeZoneMapScreen(uiState)
+                            "sat_stats" -> SatelliteStatsScreen(uiState)
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SatelliteStatsScreen(uiState: WeatherUiState) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        // 1. Graph
+        SatelliteForecastChart(
+            forecasts = uiState.satelliteForecast,
+            modifier = Modifier.padding(horizontal = 16.dp),
+            isLandscape = isLandscape
+        )
+        
+        Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 16.dp))
+        
+        // 2. Info Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2330)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = stringResource(R.string.desc_sats),
+                    color = Color.LightGray,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+        
+        // Extra space at bottom to ensure scroll visibility
+        if (isLandscape) Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -1087,25 +1149,7 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = if (isLandscape) 8.dp else 0.dp)) {
-        // 1. Tool Header (City & Favorite)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = if (isLandscape) 4.dp else 8.dp, top = if (isLandscape) 0.dp else 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF00B0FF), modifier = Modifier.size(if (isLandscape) 18.dp else 24.dp))
-            Text(
-                uiState.cityNameState, 
-                color = Color.White, 
-                fontWeight = FontWeight.Bold, 
-                style = if (isLandscape) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleMedium
-            )
-            Icon(Icons.Default.StarBorder, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(if (isLandscape) 18.dp else 24.dp))
-        }
-
-        // 2. Data Table
+        // Data Table
         Column(modifier = Modifier.weight(1f)) {
             // Header Row
             Row(
@@ -1157,7 +1201,7 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
             }
         }
 
-        // 3. Time Selector (Slider + Heatmap) at bottom - Compacted
+        // Time Selector
         Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 8.dp))
         InteractiveForecastSelector(uiState, viewModel)
     }
@@ -1213,20 +1257,9 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
     val relativeWindAngle = windDeg - deviceAzimuth
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Tool Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF00B0FF))
-            Text(uiState.cityNameState, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-            Icon(Icons.Default.StarBorder, contentDescription = null, tint = Color.Gray)
-        }
-
-        // 2. Location & Stats
+        // Location & Stats
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1236,21 +1269,21 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
             }
             
             Row(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 4.dp),
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
                     text = uiState.windSpeed,
                     color = Color(0xFF00B0FF),
-                    fontSize = 42.sp,
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Black
                 )
                 Column {
                     Text(
                         text = getCardinalDirection(uiState.windDeg),
                         color = Color(0xFF00B0FF),
-                        fontSize = 32.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
@@ -1260,7 +1293,6 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                     )
                 }
             }
-            Text("km/h", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
         }
 
         // 3. Visual Compass

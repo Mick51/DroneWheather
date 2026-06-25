@@ -44,6 +44,7 @@
     <string name="tool_checklist">Checklist</string>
     <string name="tool_wind_compass">Wind Compass</string>
     <string name="tool_safe_zones">UAS Restriction Zones</string>
+    <string name="tool_sat_stats">Satellite Statistics</string>
 
     <!-- Table & Profile Headers -->
     <string name="header_time">Time</string>

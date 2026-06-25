@@ -40,14 +40,22 @@ import java.util.*
 @Composable
 fun SatelliteForecastChart(
     forecasts: List<SatelliteForecast>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLandscape: Boolean = false
 ) {
-    if (forecasts.isEmpty()) return
+    if (forecasts.isEmpty()) {
+        Box(modifier = modifier.fillMaxWidth().height(100.dp).background(CardBackground, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+            Text("Calcul des trajectoires...", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+        }
+        return
+    }
+
+    val chartHeight = if (isLandscape) 80.dp else 120.dp
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(vertical = 4.dp)
             .background(CardBackground, RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
@@ -58,12 +66,12 @@ fun SatelliteForecastChart(
             fontWeight = FontWeight.Bold
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 16.dp))
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(chartHeight)
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width

@@ -44,6 +44,7 @@
     <string name="tool_checklist">Lista kontrolna</string>
     <string name="tool_wind_compass">Kompas wiatru</string>
     <string name="tool_safe_zones">Strefy ograniczeń UAS</string>
+    <string name="tool_sat_stats">Prognoza satelitarna</string>
 
     <!-- Table & Profile Headers -->
     <string name="header_time">Godzina</string>
