@@ -1434,10 +1434,16 @@ fun HelpScreen() {
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "DroneWeather v1.0 Beta",
+            text = "DroneWeather v1.1 Beta",
             style = MaterialTheme.typography.labelMedium,
             color = Color.Gray,
             modifier = Modifier.padding(top = 4.dp)
+        )
+        Text(
+            text = "Licence GNU GPL v3",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray.copy(alpha = 0.8f),
+            modifier = Modifier.padding(top = 2.dp)
         )
         Spacer(modifier = Modifier.height(32.dp))
         
