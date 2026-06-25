@@ -79,7 +79,6 @@ import mick.droneweather.ui.theme.NeonGreen
 import mick.droneweather.ui.theme.GreenSafe
 import mick.droneweather.ui.theme.YellowWarn
 import mick.droneweather.ui.theme.RedDanger
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import java.text.SimpleDateFormat
@@ -90,6 +89,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.core.net.toUri
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: WeatherViewModel
@@ -569,7 +569,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                             Button(
                                 onClick = {
                                     val url = "https://oktofly.com/"
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                                     context.startActivity(intent)
                                     showDetail = false
                                 },
@@ -1411,7 +1411,6 @@ fun SafeZoneMapScreen(uiState: WeatherUiState) {
                     settings.apply {
                         javaScriptEnabled = true
                         domStorageEnabled = true
-                        databaseEnabled = true
                         loadWithOverviewMode = true
                         useWideViewPort = true
                         setSupportZoom(true)
@@ -1419,7 +1418,7 @@ fun SafeZoneMapScreen(uiState: WeatherUiState) {
                         displayZoomControls = false
                         mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         cacheMode = WebSettings.LOAD_DEFAULT
-                        // User agent mobile rÃƒÂ©cent pour ÃƒÂ©viter le blocage
+                        // User agent mobile récent pour éviter le blocage
                         userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
                     }
                     
@@ -1503,7 +1502,7 @@ fun HelpScreen() {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.clickable {
                         val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:naudclick.informatik@gmail.com")
+                            data = "mailto:naudclick.informatik@gmail.com".toUri()
                             putExtra(Intent.EXTRA_SUBJECT, "DroneWeather Support")
                         }
                         context.startActivity(intent)
@@ -1559,7 +1558,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     DroneType.DJI_AIR -> stringResource(R.string.settings_drone_air)
                     DroneType.DJI_MAVIC -> stringResource(R.string.settings_drone_mavic)
                     else -> stringResource(R.string.settings_drone_custom)
-                }, droneExpanded, { droneExpanded = !droneExpanded })
+                }, droneExpanded) { droneExpanded = !droneExpanded }
                 DropdownMenu(expanded = droneExpanded, onDismissRequest = { droneExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_mini), color = Color.White) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_MINI); droneExpanded = false })
                     DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_air), color = Color.White) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_AIR); droneExpanded = false })
@@ -1573,7 +1572,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     WeatherSource.OPEN_METEO -> "Open-Meteo"
                     WeatherSource.APPLE_WEATHER -> "Apple Weather"
                     else -> "WeatherAPI"
-                }, sourceExpanded, { sourceExpanded = !sourceExpanded })
+                }, sourceExpanded) { sourceExpanded = !sourceExpanded }
                 DropdownMenu(expanded = sourceExpanded, onDismissRequest = { sourceExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
                     DropdownMenuItem(text = { Text("Open-Meteo", color = Color.White) }, onClick = { viewModel.updateSource(WeatherSource.OPEN_METEO); sourceExpanded = false })
                     DropdownMenuItem(text = { Text("Apple Weather", color = Color.White) }, onClick = { viewModel.updateSource(WeatherSource.APPLE_WEATHER); sourceExpanded = false })
@@ -1710,21 +1709,6 @@ fun SettingsSelectorRow(label: String, value: String, isExpanded: Boolean, onCli
 }
 
 @Composable
-fun DroneChip(name: String, isSelected: Boolean, onClick: () -> Unit) {
-    FilterChip(
-        selected = isSelected,
-        onClick = onClick,
-        label = { Text(name) },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = NeonGreen,
-            selectedLabelColor = Color.Black,
-            containerColor = Color.White.copy(alpha = 0.05f),
-            labelColor = Color.Gray
-        )
-    )
-}
-
-@Composable
 fun UnitChip(name: String, isSelected: Boolean, onClick: () -> Unit) {
     FilterChip(
         selected = isSelected,
@@ -1735,30 +1719,6 @@ fun UnitChip(name: String, isSelected: Boolean, onClick: () -> Unit) {
             selectedLabelColor = Color.Black
         )
     )
-}
-
-@Composable
-fun WeatherSourceOption(name: String, source: WeatherSource, isSelected: Boolean, onClick: (WeatherSource) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick(source) }.padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(name, color = if (isSelected) NeonGreen else Color.LightGray)
-        if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = NeonGreen)
-    }
-}
-
-@Composable
-fun LanguageOption(name: String, code: String, isSelected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(name, color = if (isSelected) NeonGreen else Color.LightGray)
-        if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = NeonGreen)
-    }
 }
 
 @Composable

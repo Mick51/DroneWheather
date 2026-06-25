@@ -53,7 +53,7 @@ class GfzKpSource(private val api: GfzApiService) : KpDataSource {
             val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
             sdf.timeZone = TimeZone.getTimeZone("UTC")
             val now = Date()
-            val start = Date(now.time - 24 * 60 * 60 * 1000L)
+            val start = Date(now.time - (24 * 60 * 60 * 1000L))
             
             val response = api.getKpIndex(
                 start = sdf.format(start),
@@ -74,8 +74,8 @@ class WeatherRepository(
     private val weatherDao: WeatherDao
 ) {
     private val remoteSources: List<KpDataSource> = listOf(
-        NoaaKpSource(kpApi),
-        GfzKpSource(gfzApi)
+        NoaaKpSource(this.kpApi),
+        GfzKpSource(this.gfzApi)
     )
     private val cacheTimeout = 15 * 60 * 1000L
 
@@ -141,8 +141,8 @@ class WeatherRepository(
                     async { try { source.getKpIndex() } catch (e: Exception) { 0.0 } }
                 }.awaitAll().maxOrNull() ?: 0.0
             }
-            val plasmaDeferred = async { try { kpApi.getSolarWind() } catch (_: Exception) { emptyList() } }
-            val magDeferred = async { try { kpApi.getMagData() } catch (_: Exception) { emptyList() } }
+            val plasmaDeferred = async { try { kpApi.getSolarWind() } catch (_: Exception) { emptyList<List<Any>>() } }
+            val magDeferred = async { try { kpApi.getMagData() } catch (_: Exception) { emptyList<List<Any>>() } }
             val kpForecastDeferred = async { try { kpApi.getKpForecast() } catch (_: Exception) { null } }
 
             val response = weatherDeferred.await()

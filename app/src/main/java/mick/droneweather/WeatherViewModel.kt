@@ -65,11 +65,11 @@ data class HourlyForecast(
     val precip: Int = 0,
     val weatherIcon: String? = null,
     val isNow: Boolean = false,
-    val safetyColor: Color = GreenSafe
+    val safetyColor: Color = GreenSafe,
 )
 
 enum class WeatherSource {
-    DEFAULT, WEATHER_API, OPEN_METEO, APPLE_WEATHER
+    DEFAULT, OPEN_METEO, APPLE_WEATHER
 }
 
 enum class AppTab {
@@ -77,10 +77,10 @@ enum class AppTab {
 }
 
 enum class DroneType {
-    DJI_MINI, DJI_AIR, DJI_MAVIC, AUTEL_EVO, CUSTOM
+    DJI_MINI, DJI_AIR, DJI_MAVIC, CUSTOM
 }
 
-enum class DistanceUnit { METERS, FEET, KILOMETERS, MILES, YARDS }
+enum class DistanceUnit { METERS, FEET, KILOMETERS }
 
 data class ChecklistItem(
     val id: String = java.util.UUID.randomUUID().toString(),
@@ -189,23 +189,7 @@ class WeatherViewModel(
 
     private fun loadCachedData() {
         viewModelScope.launch {
-            refresh(city = "Bezannes", force = false) 
-        }
-    }
-
-    fun getKpColor(kp: Double): Color {
-        return when {
-            kp >= 5.0 -> RedDanger
-            kp >= 3.0 -> YellowWarn
-            else -> GreenSafe
-        }
-    }
-
-    fun getBzColor(bz: Double): Color {
-        return when {
-            bz <= -10.0 -> RedDanger
-            bz <= -5.0 -> YellowWarn
-            else -> GreenSafe
+            refresh(city = "Bezannes") 
         }
     }
 
@@ -224,7 +208,7 @@ class WeatherViewModel(
                 else -> GreenSafe
             }
             "Gusts" -> when {
-                doubleValue >= state.windMaxThreshold * 1.4f -> RedDanger
+                doubleValue >= (state.windMaxThreshold * 1.4f) -> RedDanger
                 doubleValue >= state.windMaxThreshold -> YellowWarn
                 else -> GreenSafe
             }
@@ -455,8 +439,8 @@ class WeatherViewModel(
     fun toggleChecklistItem(id: String) {
         _uiState.update { state ->
             state.copy(
-                checklist = state.checklist.map {
-                    if (it.id == id) it.copy(isChecked = !it.isChecked) else it
+                checklist = state.checklist.map { item ->
+                    if (item.id == id) item.copy(isChecked = !item.isChecked) else item
                 }
             )
         }
@@ -477,10 +461,6 @@ class WeatherViewModel(
                 checklist = state.checklist.filter { it.id != id }
             )
         }
-    }
-
-    fun saveChecklist() {
-        // En vrai ici on sauvegarderait dans Room ou Prefs
     }
 
     fun updateSettings(
@@ -564,12 +544,12 @@ class WeatherViewModel(
         fusedClient.lastLocation
             .addOnSuccessListener { lastLocation ->
                 if (lastLocation != null && !force) {
-                    processLocation(context, lastLocation, force)
+                    processLocation(context, lastLocation)
                 } else {
                     fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                         .addOnSuccessListener { location ->
                             if (location != null) {
-                                processLocation(context, location, force)
+                                processLocation(context, location)
                             } else {
                                 Log.e("WeatherViewModel", "Location is null")
                                 refresh("Bezannes", 49.2217, 3.9928, force = force)
@@ -587,12 +567,13 @@ class WeatherViewModel(
             }
     }
 
-    private fun processLocation(context: Context, location: android.location.Location, force: Boolean) {
+    private fun processLocation(context: Context, location: android.location.Location) {
         val lat = location.latitude
         val lon = location.longitude
         
         viewModelScope.launch {
             val geocoder = Geocoder(context, Locale.getDefault())
+            @Suppress("DEPRECATION")
             val cityName = withContext(Dispatchers.IO) {
                 try {
                     val addresses = geocoder.getFromLocation(lat, lon, 1)
@@ -601,7 +582,7 @@ class WeatherViewModel(
                     "Erreur Ville"
                 }
             }
-            refresh(cityName, lat, lon, force = force)
+            refresh(cityName, lat, lon)
         }
     }
 
@@ -612,9 +593,9 @@ class WeatherViewModel(
             val rawList: List<Map<String, Any>> = Gson().fromJson(json, type)
             
             val timePattern = if (_uiState.value.timeFormat24h) "HH:mm" else "hh:mm a"
-            val sdf = java.text.SimpleDateFormat(timePattern, java.util.Locale.getDefault())
+            val sdf = java.text.SimpleDateFormat(timePattern, Locale.getDefault())
 
-            val realForecast = rawList.map { map ->
+            val realForecast = rawList.asSequence().map { map ->
                 val dt = (map["dt"] as? Double)?.toLong() ?: 0L
                 val isNow = map["isNow"] as? Boolean ?: false
                 val wind = map["wind"]?.toString() ?: "0"
