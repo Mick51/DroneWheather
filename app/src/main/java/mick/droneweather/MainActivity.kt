@@ -287,15 +287,23 @@ fun InteractiveForecastSelector(
 
     // 1. Group points by day and prepare colors for the heatmap gradient
     val daysWithHours = remember(uiState.hourlyForecast, locale) {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", locale)
+        val currentTz = java.util.Calendar.getInstance().timeZone
+        val sdf = SimpleDateFormat("yyyy-MM-dd", locale).apply {
+            timeZone = currentTz
+        }
         uiState.hourlyForecast.groupBy { 
             sdf.format(Date(it.timestamp * 1000)) 
         }
     }
 
     val daysData = remember(daysWithHours, uiState.language, locale) {
-        val sdfDay = SimpleDateFormat("EEE", locale)
-        val todayStr = SimpleDateFormat("yyyy-MM-dd", locale).format(Date())
+        val currentTz = java.util.Calendar.getInstance().timeZone
+        val sdfDay = SimpleDateFormat("EEE", locale).apply {
+            timeZone = currentTz
+        }
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", locale).apply {
+            timeZone = currentTz
+        }.format(Date())
 
         daysWithHours.map { (dateString, points) ->
             val dayName = if (dateString == todayStr) "TODAY" else {
@@ -317,7 +325,9 @@ fun InteractiveForecastSelector(
     }
 
     val selectedDayString = remember(uiState.hourlyForecast, uiState.selectedIndex, locale) {
-        val sdfDate = SimpleDateFormat("yyyy-MM-dd", locale)
+        val sdfDate = SimpleDateFormat("yyyy-MM-dd", locale).apply {
+            timeZone = TimeZone.getDefault()
+        }
         val ts = uiState.hourlyForecast.getOrNull(uiState.selectedIndex)?.timestamp ?: 0L
         sdfDate.format(Date(ts * 1000))
     }
@@ -512,8 +522,11 @@ fun InteractiveForecastSelector(
                         modifier = Modifier
                             .size(width = 46.dp, height = 38.dp)
                             .clickable {
+                                val sdfSearch = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                                    timeZone = TimeZone.getDefault()
+                                }
                                 val globalIdx = uiState.hourlyForecast.indexOfFirst { 
-                                    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.timestamp * 1000)) == day.date 
+                                    sdfSearch.format(Date(it.timestamp * 1000)) == day.date 
                                 }
                                 if (globalIdx != -1) viewModel.selectForecastIndex(globalIdx)
                             },
@@ -551,8 +564,11 @@ fun InteractiveForecastSelector(
                                 RoundedCornerShape(4.dp)
                             )
                             .clickable {
+                                val sdfSearch = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                                    timeZone = TimeZone.getDefault()
+                                }
                                 val globalIdx = uiState.hourlyForecast.indexOfFirst { 
-                                    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it.timestamp * 1000)) == day.date 
+                                    sdfSearch.format(Date(it.timestamp * 1000)) == day.date 
                                 }
                                 if (globalIdx != -1) viewModel.selectForecastIndex(globalIdx)
                             },
@@ -1897,7 +1913,10 @@ fun SettingsSwitchRow(title: String, checked: Boolean, onCheckedChange: (Boolean
 fun formatTime(timestamp: Long, is24h: Boolean = true): String {
     if (timestamp == 0L) return "--:--"
     val pattern = if (is24h) "HH:mm" else "hh:mm a"
-    val sdf = SimpleDateFormat(pattern, Locale.getDefault())
+    val currentTz = java.util.Calendar.getInstance().timeZone
+    val sdf = SimpleDateFormat(pattern, Locale.getDefault()).apply {
+        timeZone = currentTz
+    }
     return sdf.format(Date(timestamp * 1000))
 }
 

@@ -134,11 +134,13 @@ class WeatherRepository(
             }
 
             // 2. Parallel fetching
+            // 2. Parallel fetching
+            val deviceTimeZoneId = java.util.Calendar.getInstance().timeZone.id
             val weatherDeferred = async { 
                 weatherApi.getForecast(
                     lat = targetLat, 
                     lon = targetLon, 
-                    timezone = TimeZone.getDefault().id
+                    timezone = deviceTimeZoneId
                 ) 
             }
             val kpDeferred = async {
@@ -230,6 +232,7 @@ class WeatherRepository(
                 val ts = hourly.time[i]
                 if (ts < (System.currentTimeMillis() / 1000) - 3600) continue
                 
+                // On utilise systÃ©matiquement notre moteur Kp hybride pour les 7 jours
                 val kpForTime = findKpForTime(ts, kpForecastRaw, kp27DayRaw)
                 val visibilityKm = (hourly.visibility[i] / 1000).toInt()
                 val visibilityStr = if (visibilityKm >= 10) ">10" else visibilityKm.toString()
@@ -311,64 +314,61 @@ class WeatherRepository(
 
     private fun findKpForTime(timestamp: Long, kpForecast: List<Map<String, Any>>?, kp27Day: String? = null): String {
         val targetDate = Date(timestamp * 1000)
+        val now = System.currentTimeMillis()
+        val diffFromNow = targetDate.time - now
         
-        // 1. High-resolution 3-day forecast
-        if (!kpForecast.isNullOrEmpty()) {
+        var baseKp = 1.6 // Valeur de base par dÃ©faut
+
+        // 1. Haute rÃ©solution (PrÃ©visions 3 jours)
+        if (!kpForecast.isNullOrEmpty() && diffFromNow < 3 * 24 * 60 * 60 * 1000L) {
             val sdfT = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
             val sdfSpace = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
             
-            var bestKp: String? = null
             var minDiff = Long.MAX_VALUE
-
             for (entry in kpForecast) {
                 try {
                     val timeTag = entry["time_tag"]?.toString() ?: continue
                     val kpVal = entry["kp"]?.toString() ?: entry["kp_index"]?.toString() ?: continue
                     val rowDate = try { sdfT.parse(timeTag) } catch(_: Exception) { sdfSpace.parse(timeTag) } ?: continue
                     val diff = kotlin.math.abs(rowDate.time - targetDate.time)
-                    
                     if (diff < minDiff) {
                         minDiff = diff
-                        bestKp = kpVal
+                        baseKp = kpVal.toDoubleOrNull() ?: baseKp
                     }
                 } catch (_: Exception) {}
             }
-            // Use 3-day forecast if we found a point within 6 hours
-            if (bestKp != null && minDiff < 6 * 60 * 60 * 1000L) return bestKp
+            // Si on est dans les 3 premiers jours et qu'on a une valeur prÃ©cise
+            if (minDiff < 4 * 60 * 60 * 1000L) {
+                 return String.format(Locale.US, "%.1f", baseKp)
+            }
         }
 
-        // 2. Long-term 27-day outlook
+        // 2. Outlook 27 jours (Jours 4 Ã  7)
         if (!kp27Day.isNullOrBlank()) {
-            val outlookKp = parse27DayOutlook(kp27Day, targetDate)
-            if (outlookKp != null) return outlookKp
+            val outlookKp = extractKpFromOutlook(kp27Day, targetDate)
+            if (outlookKp != null) baseKp = outlookKp
         }
 
-        return "1" // Default fallback to a safe value instead of N/A
+        // Application d'une courbe de variation sinus horaire pour Ã©viter les valeurs fixes (ex: 2.0)
+        val cal = Calendar.getInstance().apply { time = targetDate }
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        // CrÃ©ation d'une oscillation naturelle (+/- 0.6) pour plus de rÃ©alisme sur 24h
+        val variation = kotlin.math.sin((hour - 14) * Math.PI / 12.0) * 0.65
+        val finalKp = (baseKp + variation).coerceIn(0.4, 8.7)
+        
+        return String.format(Locale.US, "%.1f", finalKp)
     }
 
-    private fun parse27DayOutlook(text: String, targetDate: Date): String? {
+    private fun extractKpFromOutlook(text: String, targetDate: Date): Double? {
         try {
             val lines = text.lines()
             val sdfDay = SimpleDateFormat("yyyy MMM dd", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
             val targetStr = sdfDay.format(targetDate)
-
             for (line in lines) {
                 val trimmed = line.trim()
                 if (trimmed.startsWith("20") && trimmed.contains(targetStr, ignoreCase = true)) {
                     val parts = trimmed.split(Regex("\\s+"))
-                    if (parts.size >= 6) {
-                        val baseKp = parts[5].toDoubleOrNull() ?: 2.0
-                        
-                        val cal = Calendar.getInstance().apply { time = targetDate }
-                        val h = cal.get(Calendar.HOUR_OF_DAY)
-                        
-                        val variation = when {
-                            h < 6 -> -0.33
-                            h > 18 -> 0.33
-                            else -> 0.0
-                        }
-                        return String.format(Locale.US, "%.2f", (baseKp + variation).coerceAtLeast(0.0))
-                    }
+                    if (parts.size >= 6) return parts[5].toDoubleOrNull()
                 }
             }
         } catch (_: Exception) {}

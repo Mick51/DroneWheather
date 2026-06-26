@@ -774,7 +774,9 @@ class WeatherViewModel(
             val rawList: List<Map<String, Any>> = Gson().fromJson(json, type)
             
             val timePattern = if (_uiState.value.timeFormat24h) "HH:mm" else "hh:mm a"
-            val sdf = java.text.SimpleDateFormat(timePattern, Locale.getDefault())
+            val sdf = java.text.SimpleDateFormat(timePattern, Locale.getDefault()).apply {
+                timeZone = java.util.TimeZone.getDefault()
+            }
 
             val realForecast = rawList.asSequence().map { map ->
                 val dt = (map["dt"] as? Double)?.toLong() ?: 0L
