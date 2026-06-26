@@ -111,8 +111,9 @@ class MainActivity : AppCompatActivity() {
         val kpApi = RetrofitInstance.kpApi
         val gfzApi = RetrofitInstance.gfzApi
         val repository = WeatherRepository(weatherApi, kpApi, gfzApi, db.weatherDao())
+        val settingsManager = SettingsManager(this)
         
-        viewModel = ViewModelProvider(this, WeatherViewModelFactory(repository))[WeatherViewModel::class.java]
+        viewModel = ViewModelProvider(this, WeatherViewModelFactory(repository, settingsManager))[WeatherViewModel::class.java]
 
         scheduleWorkers()
 
@@ -1771,8 +1772,8 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 SettingsExpandableRow(stringResource(R.string.settings_weather_label), expandedSection == "meteo") { expandedSection = if (expandedSection == "meteo") null else "meteo" }
                 if (expandedSection == "meteo") {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSwitchRow(stringResource(R.string.settings_alert_rain), true) {}
-                        SettingsSwitchRow(stringResource(R.string.settings_alert_storm), true) {}
+                        SettingsSwitchRow(stringResource(R.string.settings_alert_rain), uiState.alertRain) { viewModel.updateSettings(alertRain = it) }
+                        SettingsSwitchRow(stringResource(R.string.settings_alert_storm), uiState.alertStorm) { viewModel.updateSettings(alertStorm = it) }
                     }
                 }
 
@@ -1791,8 +1792,8 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 SettingsExpandableRow(stringResource(R.string.settings_ui_label), expandedSection == "ui") { expandedSection = if (expandedSection == "ui") null else "ui" }
                 if (expandedSection == "ui") {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSwitchRow(stringResource(R.string.settings_dark_theme), true) {}
-                        SettingsSwitchRow(stringResource(R.string.settings_smooth_anim), true) {}
+                        SettingsSwitchRow(stringResource(R.string.settings_dark_theme), uiState.darkTheme) { viewModel.updateSettings(darkTheme = it) }
+                        SettingsSwitchRow(stringResource(R.string.settings_smooth_anim), uiState.smoothAnim) { viewModel.updateSettings(smoothAnim = it) }
                     }
                 }
 
@@ -1800,8 +1801,8 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 SettingsExpandableRow(stringResource(R.string.settings_notifications_label), expandedSection == "notif") { expandedSection = if (expandedSection == "notif") null else "notif" }
                 if (expandedSection == "notif") {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSwitchRow(stringResource(R.string.settings_alert_weather), true) {}
-                        SettingsSwitchRow(stringResource(R.string.settings_morning_forecast), false) {}
+                        SettingsSwitchRow(stringResource(R.string.settings_alert_weather), uiState.alertWeather) { viewModel.updateSettings(alertWeather = it) }
+                        SettingsSwitchRow(stringResource(R.string.settings_morning_forecast), uiState.morningForecast) { viewModel.updateSettings(morningForecast = it) }
                     }
                 }
             }

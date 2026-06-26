@@ -153,6 +153,13 @@ data class WeatherUiState(
     val useGalileo: Boolean = true,
     val useBeidou: Boolean = true,
     
+    val alertRain: Boolean = true,
+    val alertStorm: Boolean = true,
+    val darkTheme: Boolean = true,
+    val smoothAnim: Boolean = true,
+    val alertWeather: Boolean = true,
+    val morningForecast: Boolean = false,
+    
     val deviceAzimuth: Float = 0f,
     val satelliteForecast: List<SatelliteForecast> = emptyList(),
 
@@ -169,15 +176,41 @@ data class WeatherUiState(
 // --- ViewModel ---
 
 class WeatherViewModel(
-    private val repository: WeatherRepository
+    private val repository: WeatherRepository,
+    private val settingsManager: SettingsManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(WeatherUiState())
+    private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
     init {
         loadCachedData()
         loadSatelliteForecast()
+    }
+
+    private fun loadInitialState(): WeatherUiState {
+        return WeatherUiState(
+            language = settingsManager.getString("language", Locale.getDefault().language.let { if (it in listOf("fr", "en", "pl")) it else "en" }),
+            timeFormat24h = settingsManager.getBoolean("timeFormat24h", true),
+            droneType = DroneType.valueOf(settingsManager.getString("droneType", DroneType.DJI_MINI.name)),
+            tempMinThreshold = settingsManager.getInt("tempMin", 0),
+            tempMaxThreshold = settingsManager.getInt("tempMax", 40),
+            windMaxThreshold = settingsManager.getInt("windMax", 25),
+            altitudeUnit = DistanceUnit.valueOf(settingsManager.getString("altitudeUnit", DistanceUnit.METERS.name)),
+            forecastAltitude = settingsManager.getInt("forecastAltitude", 10),
+            visibilityMinThreshold = settingsManager.getDouble("visibilityMin", 5.0),
+            useGps = settingsManager.getBoolean("useGps", true),
+            useGlonass = settingsManager.getBoolean("useGlonass", true),
+            useGalileo = settingsManager.getBoolean("useGalileo", true),
+            useBeidou = settingsManager.getBoolean("useBeidou", true),
+            alertRain = settingsManager.getBoolean("alertRain", true),
+            alertStorm = settingsManager.getBoolean("alertStorm", true),
+            darkTheme = settingsManager.getBoolean("darkTheme", true),
+            smoothAnim = settingsManager.getBoolean("smoothAnim", true),
+            alertWeather = settingsManager.getBoolean("alertWeather", true),
+            morningForecast = settingsManager.getBoolean("morningForecast", false),
+            selectedSource = WeatherSource.valueOf(settingsManager.getString("selectedSource", WeatherSource.DEFAULT.name))
+        )
     }
 
     private fun loadSatelliteForecast() {
@@ -513,6 +546,7 @@ class WeatherViewModel(
     }
 
     fun updateSource(source: WeatherSource) {
+        settingsManager.saveString("selectedSource", source.name)
         _uiState.update { it.copy(selectedSource = source) }
         // Trigger a refresh with the new source
         val currentState = _uiState.value
@@ -564,10 +598,36 @@ class WeatherViewModel(
         useGps: Boolean? = null,
         useGlonass: Boolean? = null,
         useGalileo: Boolean? = null,
-        useBeidou: Boolean? = null
+        useBeidou: Boolean? = null,
+        alertRain: Boolean? = null,
+        alertStorm: Boolean? = null,
+        darkTheme: Boolean? = null,
+        smoothAnim: Boolean? = null,
+        alertWeather: Boolean? = null,
+        morningForecast: Boolean? = null
     ) {
         val gnssChanged = useGps != null || useGlonass != null || useGalileo != null || useBeidou != null
         
+        language?.let { settingsManager.saveString("language", it) }
+        timeFormat24h?.let { settingsManager.saveBoolean("timeFormat24h", it) }
+        droneType?.let { settingsManager.saveString("droneType", it.name) }
+        tempMin?.let { settingsManager.saveInt("tempMin", it) }
+        tempMax?.let { settingsManager.saveInt("tempMax", it) }
+        windMax?.let { settingsManager.saveInt("windMax", it) }
+        altitudeUnit?.let { settingsManager.saveString("altitudeUnit", it.name) }
+        forecastAltitude?.let { settingsManager.saveInt("forecastAltitude", it) }
+        visibilityMin?.let { settingsManager.saveDouble("visibilityMin", it) }
+        useGps?.let { settingsManager.saveBoolean("useGps", it) }
+        useGlonass?.let { settingsManager.saveBoolean("useGlonass", it) }
+        useGalileo?.let { settingsManager.saveBoolean("useGalileo", it) }
+        useBeidou?.let { settingsManager.saveBoolean("useBeidou", it) }
+        alertRain?.let { settingsManager.saveBoolean("alertRain", it) }
+        alertStorm?.let { settingsManager.saveBoolean("alertStorm", it) }
+        darkTheme?.let { settingsManager.saveBoolean("darkTheme", it) }
+        smoothAnim?.let { settingsManager.saveBoolean("smoothAnim", it) }
+        alertWeather?.let { settingsManager.saveBoolean("alertWeather", it) }
+        morningForecast?.let { settingsManager.saveBoolean("morningForecast", it) }
+
         _uiState.update { 
             it.copy(
                 language = language ?: it.language,
@@ -583,7 +643,13 @@ class WeatherViewModel(
                 useGps = useGps ?: it.useGps,
                 useGlonass = useGlonass ?: it.useGlonass,
                 useGalileo = useGalileo ?: it.useGalileo,
-                useBeidou = useBeidou ?: it.useBeidou
+                useBeidou = useBeidou ?: it.useBeidou,
+                alertRain = alertRain ?: it.alertRain,
+                alertStorm = alertStorm ?: it.alertStorm,
+                darkTheme = darkTheme ?: it.darkTheme,
+                smoothAnim = smoothAnim ?: it.smoothAnim,
+                alertWeather = alertWeather ?: it.alertWeather,
+                morningForecast = morningForecast ?: it.morningForecast
             )
         }
 
@@ -766,12 +832,13 @@ class WeatherViewModel(
 }
 
 class WeatherViewModelFactory(
-    private val repository: WeatherRepository
+    private val repository: WeatherRepository,
+    private val settingsManager: SettingsManager
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(WeatherViewModel::class.java)) {
-            return WeatherViewModel(repository) as T
+            return WeatherViewModel(repository, settingsManager) as T
         }
         throw IllegalArgumentException("ViewModel inconnu")
     }
