@@ -28,7 +28,14 @@ class SatelliteForecastWorker(
     override suspend fun doWork(): Result {
         val db = AppDatabase.getDatabase(applicationContext)
         val weatherDao = db.weatherDao()
+        val settingsManager = SettingsManager(applicationContext)
         
+        // Use user preferences for background calculation
+        val useGps = settingsManager.getBoolean("useGps", true)
+        val useGlonass = settingsManager.getBoolean("useGlonass", true)
+        val useGalileo = settingsManager.getBoolean("useGalileo", true)
+        val useBeidou = settingsManager.getBoolean("useBeidou", false)
+
         // Use a dummy location if we don't have one, or better, use the last cached location
         val cached = weatherDao.getCachedData()
         val tleList = weatherDao.getAllTleData()
@@ -38,7 +45,13 @@ class SatelliteForecastWorker(
 
         return try {
             val predictor = SatellitePredictor()
-            val forecasts = predictor.generateMultiDayForecast(lat, lon, kp, tleList, days = 7)
+            val forecasts = predictor.generateMultiDayForecast(
+                lat, lon, kp, tleList, days = 7,
+                useGps = useGps,
+                useGlonass = useGlonass,
+                useGalileo = useGalileo,
+                useBeidou = useBeidou
+            )
             
             val deleteThreshold = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L)
             weatherDao.clearOldForecasts(deleteThreshold)

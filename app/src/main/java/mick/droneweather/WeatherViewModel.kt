@@ -151,7 +151,7 @@ data class WeatherUiState(
     val useGps: Boolean = true,
     val useGlonass: Boolean = true,
     val useGalileo: Boolean = true,
-    val useBeidou: Boolean = true,
+    val useBeidou: Boolean = false,
     
     val alertRain: Boolean = true,
     val alertStorm: Boolean = true,
@@ -204,7 +204,7 @@ class WeatherViewModel(
             useGps = settingsManager.getBoolean("useGps", true),
             useGlonass = settingsManager.getBoolean("useGlonass", true),
             useGalileo = settingsManager.getBoolean("useGalileo", true),
-            useBeidou = settingsManager.getBoolean("useBeidou", true),
+            useBeidou = settingsManager.getBoolean("useBeidou", false),
             alertRain = settingsManager.getBoolean("alertRain", true),
             alertStorm = settingsManager.getBoolean("alertStorm", true),
             darkTheme = settingsManager.getBoolean("darkTheme", true),

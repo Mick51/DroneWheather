@@ -467,11 +467,17 @@ fun InteractiveForecastSelector(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         val currentStep = sliderValue.roundToInt().coerceIn(0, dayHours.size - 1)
-                        // Heure uniquement, adaptée au format
+                        val rawTime = dayHours[currentStep].time
+                        
+                        // Heure uniquement, adaptée au format pour tenir dans 30dp
                         val displayTime = if (uiState.timeFormat24h) {
-                            dayHours[currentStep].time.split(":")[0] + "H"
+                            rawTime.split(":")[0] + "H"
                         } else {
-                            dayHours[currentStep].time // "02:00 PM"
+                            // "02:00 PM" -> "2P" (numérique et compact)
+                            val parts = rawTime.split(" ")
+                            val hour = parts[0].split(":")[0].removePrefix("0")
+                            val amPm = parts.getOrNull(1)?.take(1) ?: ""
+                            hour + amPm
                         }
                         Text(
                             text = displayTime,

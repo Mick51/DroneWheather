@@ -45,7 +45,7 @@ class SatellitePredictor {
         useGps: Boolean = true,
         useGlonass: Boolean = true,
         useGalileo: Boolean = true,
-        useBeidou: Boolean = true
+        useBeidou: Boolean = false
     ): SatelliteForecast {
         val date = AbsoluteDate(Date(timestamp * 1000), TimeScalesFactory.getUTC())
         val userPoint = GeodeticPoint(Math.toRadians(userLat), Math.toRadians(userLon), 0.0)
