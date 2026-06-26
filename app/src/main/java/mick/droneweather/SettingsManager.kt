@@ -18,12 +18,13 @@ package mick.droneweather
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 class SettingsManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("drone_weather_prefs", Context.MODE_PRIVATE)
 
     fun saveString(key: String, value: String) {
-        prefs.edit().putString(key, value).apply()
+        prefs.edit { putString(key, value) }
     }
 
     fun getString(key: String, defaultValue: String): String {
@@ -31,7 +32,7 @@ class SettingsManager(context: Context) {
     }
 
     fun saveInt(key: String, value: Int) {
-        prefs.edit().putInt(key, value).apply()
+        prefs.edit { putInt(key, value) }
     }
 
     fun getInt(key: String, defaultValue: Int): Int {
@@ -39,7 +40,7 @@ class SettingsManager(context: Context) {
     }
 
     fun saveBoolean(key: String, value: Boolean) {
-        prefs.edit().putBoolean(key, value).apply()
+        prefs.edit { putBoolean(key, value) }
     }
 
     fun getBoolean(key: String, defaultValue: Boolean): Boolean {
@@ -47,7 +48,7 @@ class SettingsManager(context: Context) {
     }
 
     fun saveDouble(key: String, value: Double) {
-        prefs.edit().putFloat(key, value.toFloat()).apply()
+        prefs.edit { putFloat(key, value.toFloat()) }
     }
 
     fun getDouble(key: String, defaultValue: Double): Double {
