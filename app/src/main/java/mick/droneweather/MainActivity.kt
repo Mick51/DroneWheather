@@ -934,13 +934,30 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        if (fineGranted || coarseGranted) { permissionsGranted = true; viewModel.updateLocationAndData(context) }
-        else { viewModel.refresh("Bezannes", 49.2217, 3.9928) }
+        val notificationsGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions[Manifest.permission.POST_NOTIFICATIONS] ?: false
+        } else true
+
+        if (fineGranted || coarseGranted) { 
+            permissionsGranted = true
+            viewModel.updateLocationAndData(context) 
+        } else { 
+            viewModel.refresh("Bezannes", 49.2217, 3.9928) 
+        }
     }
 
     LaunchedEffect(Unit) {
-        if (!permissionsGranted) {
-            permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        val permissionsToRequest = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        if (!permissionsGranted || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)) {
+            permissionLauncher.launch(permissionsToRequest.toTypedArray())
         } else {
             // Déjà accordé, on met à jour la position et les données
             viewModel.updateLocationAndData(context)
