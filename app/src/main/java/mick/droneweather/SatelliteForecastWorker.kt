@@ -19,14 +19,13 @@ package mick.droneweather
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import androidx.work.ListenableWorker
 
 class SatelliteForecastWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): ListenableWorker.Result {
+    override suspend fun doWork(): Result {
         val db = AppDatabase.getDatabase(applicationContext)
         val weatherDao = db.weatherDao()
         
@@ -41,12 +40,13 @@ class SatelliteForecastWorker(
             val predictor = SatellitePredictor()
             val forecasts = predictor.generateMultiDayForecast(lat, lon, kp, tleList, days = 7)
             
-            weatherDao.clearOldForecasts(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L)
+            val deleteThreshold = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L)
+            weatherDao.clearOldForecasts(deleteThreshold)
             weatherDao.insertSatelliteForecasts(forecasts)
             
-            ListenableWorker.Result.success()
-        } catch (e: Exception) {
-            ListenableWorker.Result.retry()
+            Result.success()
+        } catch (_: Exception) {
+            Result.retry()
         }
     }
 }

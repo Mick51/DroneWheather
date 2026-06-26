@@ -398,7 +398,7 @@ class WeatherViewModel(
         
         viewModelScope.launch {
             try {
-                val data = repository.getWeatherData(city, lat, lon, force, _uiState.value.selectedSource)
+                val data = repository.getWeatherData(city, lat, lon, force)
                 
                 // Update map center and basic data first
                 _uiState.update { it.copy(

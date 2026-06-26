@@ -136,18 +136,5 @@ class SatellitePredictor {
 
         return forecasts
     }
-
-    fun generate24hForecast(
-        startLat: Double,
-        startLon: Double,
-        currentKp: Float,
-        tleList: List<TleData>,
-        useGps: Boolean = true,
-        useGlonass: Boolean = true,
-        useGalileo: Boolean = true,
-        useBeidou: Boolean = true
-    ): List<SatelliteForecast> {
-        return generateMultiDayForecast(startLat, startLon, currentKp, tleList, 1, useGps, useGlonass, useGalileo, useBeidou)
-    }
 }
 

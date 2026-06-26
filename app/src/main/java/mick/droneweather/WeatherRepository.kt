@@ -98,8 +98,7 @@ class WeatherRepository(
         city: String,
         lat: Double? = null,
         lon: Double? = null,
-        force: Boolean = false,
-        source: WeatherSource = WeatherSource.DEFAULT
+        force: Boolean = false
     ): WeatherCache = coroutineScope {
         val cached = weatherDao.getCachedData()
         val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
