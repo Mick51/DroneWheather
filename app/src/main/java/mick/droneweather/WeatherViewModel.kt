@@ -242,8 +242,8 @@ class WeatherViewModel(
         }
     }
 
-    fun getCardColor(type: String, value: Any?): Color {
-        val state = _uiState.value
+    fun getCardColor(type: String, value: Any?, providedState: WeatherUiState? = null): Color {
+        val state = providedState ?: _uiState.value
         val doubleValue = when (value) {
             is Number -> value.toDouble()
             is String -> value.toDoubleOrNull() ?: 0.0
@@ -288,8 +288,8 @@ class WeatherViewModel(
                     doubleValue
                 }
                 when {
-                    parsedValue < 2 -> RedDanger
-                    parsedValue < 5 -> YellowWarn
+                    parsedValue < state.visibilityMinThreshold * 0.4 -> RedDanger
+                    parsedValue < state.visibilityMinThreshold -> YellowWarn
                     else -> GreenSafe
                 }
             }
@@ -303,9 +303,10 @@ class WeatherViewModel(
         kpValue: Double?,
         currentBz: Double,
         precip: Int = 0,
-        temperature: String = "0"
+        temperature: String = "0",
+        providedState: WeatherUiState? = null
     ): Triple<Boolean, Int, Color> {
-        val state = _uiState.value
+        val state = providedState ?: _uiState.value
         val currentKp = kpValue ?: 0.0
         val currentWind = windSpeed.toIntOrNull() ?: 0
         val currentGust = windGust.toIntOrNull() ?: 0
@@ -332,7 +333,7 @@ class WeatherViewModel(
         val statusResId = when {
             isPrecipDanger -> R.string.status_precip_danger
             isWindDanger -> R.string.status_winds_danger
-            isTempDanger -> R.string.status_winds_danger // Need a temp danger string, reusing wind for now or generic
+            isTempDanger -> R.string.status_winds_danger
             currentKp >= 5.0 -> R.string.status_kp_danger
             currentKp >= 3.0 -> R.string.status_kp_warn
             currentBz <= -10.0 -> R.string.status_bz_danger
@@ -641,7 +642,23 @@ class WeatherViewModel(
                 smoothAnim = smoothAnim ?: it.smoothAnim,
                 alertWeather = alertWeather ?: it.alertWeather,
                 morningForecast = morningForecast ?: it.morningForecast
-            )
+            ).let { updatedState ->
+                // Recalculate safety status for the current selected hour with the new thresholds
+                val (safety, resId, color) = calculateSafetyStatus(
+                    updatedState.windSpeed, 
+                    updatedState.windGust, 
+                    updatedState.kpValue, 
+                    updatedState.currentBz, 
+                    updatedState.precip, 
+                    updatedState.temperature,
+                    updatedState // Pass the updated state to use the new thresholds
+                )
+                updatedState.copy(
+                    isSafe = safety,
+                    statusTextResId = resId,
+                    statusColor = color
+                )
+            }
         }
 
         if (gnssChanged) {
