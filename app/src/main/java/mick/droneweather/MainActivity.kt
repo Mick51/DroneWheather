@@ -97,9 +97,17 @@ import androidx.lifecycle.LifecycleEventObserver
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: WeatherViewModel
+    private var canAutoClose = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Sécurité : n'autorise la fermeture automatique qu'après 2 secondes
+        // pour laisser passer les dialogues de permissions
+        lifecycleScope.launch {
+            kotlinx.coroutines.delay(2000)
+            canAutoClose = true
+        }
         
         lifecycleScope.launch(Dispatchers.IO) {
             OrekitInitializer.init(this@MainActivity)
@@ -162,8 +170,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        // Ferme l'application et la retire du multitâche dès qu'on appuie sur Home ou Multitâche
-        finishAndRemoveTask()
+        // Ferme l'application uniquement si l'initialisation est finie
+        if (canAutoClose) {
+            finishAndRemoveTask()
+        }
     }
 }
 
