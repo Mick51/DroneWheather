@@ -94,6 +94,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import kotlin.time.Duration.Companion.seconds
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: WeatherViewModel
@@ -105,7 +106,7 @@ class MainActivity : AppCompatActivity() {
         // Sécurité : n'autorise la fermeture automatique qu'après 2 secondes
         // pour laisser passer les dialogues de permissions
         lifecycleScope.launch {
-            kotlinx.coroutines.delay(2000)
+            kotlinx.coroutines.delay(2.seconds)
             canAutoClose = true
         }
         
