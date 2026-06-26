@@ -885,17 +885,9 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val activity = (context as? androidx.activity.ComponentActivity)
-
-    // Global back handler: 
-    // 1. If not on Dashboard, return to Dashboard
-    // 2. If on Dashboard, close the activity/app
-    BackHandler(enabled = true) {
-        if (uiState.currentTab != AppTab.DASHBOARD) {
-            viewModel.setTab(AppTab.DASHBOARD)
-        } else {
-            activity?.finish()
-        }
+    // Global back handler to return to DASHBOARD tab
+    BackHandler(enabled = uiState.currentTab != AppTab.DASHBOARD) {
+        viewModel.setTab(AppTab.DASHBOARD)
     }
 
     // Refresh data when app returns to foreground
