@@ -24,8 +24,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -96,7 +94,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import kotlin.time.Duration.Companion.seconds
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: WeatherViewModel

@@ -96,14 +96,6 @@ data class GfzKpResponse(
     @SerializedName("datetime") val datetime: List<String>
 )
 
-data class SolarWindEntry(
-    val time: String,
-    val density: Double,
-    val speed: Double,
-    val bz: Double,
-    val bt: Double? = null
-)
-
 // --- API Interfaces ---
 
 interface WeatherApiService {
