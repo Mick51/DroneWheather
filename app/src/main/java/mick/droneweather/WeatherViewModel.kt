@@ -39,7 +39,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.osmdroid.util.GeoPoint
-import java.util.Locale
+import java.util.*
 
 // --- ModÃƒÂ¨les d'ÃƒÂ©tat ---
 
@@ -83,7 +83,7 @@ enum class DroneType {
 enum class DistanceUnit { METERS, FEET, KILOMETERS }
 
 data class ChecklistItem(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String = UUID.randomUUID().toString(),
     val text: String,
     val isChecked: Boolean = false
 )
@@ -775,7 +775,7 @@ class WeatherViewModel(
             
             val timePattern = if (_uiState.value.timeFormat24h) "HH:mm" else "hh:mm a"
             val sdf = java.text.SimpleDateFormat(timePattern, Locale.getDefault()).apply {
-                timeZone = java.util.TimeZone.getDefault()
+                timeZone = TimeZone.getDefault()
             }
 
             val realForecast = rawList.asSequence().map { map ->
@@ -800,7 +800,7 @@ class WeatherViewModel(
 
                 HourlyForecast(
                     timestamp = dt,
-                    time = sdf.format(java.util.Date(dt * 1000)),
+                    time = sdf.format(Date(dt * 1000)),
                     temp = map["temp"]?.toString() ?: "0",
                     wind = wind,
                     wind80m = wind80m,

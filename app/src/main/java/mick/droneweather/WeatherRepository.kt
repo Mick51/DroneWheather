@@ -134,8 +134,7 @@ class WeatherRepository(
             }
 
             // 2. Parallel fetching
-            // 2. Parallel fetching
-            val deviceTimeZoneId = java.util.Calendar.getInstance().timeZone.id
+            val deviceTimeZoneId = Calendar.getInstance().timeZone.id
             val weatherDeferred = async { 
                 weatherApi.getForecast(
                     lat = targetLat, 

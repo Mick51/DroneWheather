@@ -84,6 +84,7 @@ import mick.droneweather.ui.theme.YellowWarn
 import mick.droneweather.ui.theme.RedDanger
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 import androidx.core.os.LocaleListCompat
 import androidx.compose.animation.core.*
@@ -129,11 +130,11 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         // Periodic work
-        val tleRequest = PeriodicWorkRequestBuilder<TleDownloadWorker>(1, java.util.concurrent.TimeUnit.DAYS)
+        val tleRequest = PeriodicWorkRequestBuilder<TleDownloadWorker>(1, TimeUnit.DAYS)
             .setConstraints(constraints)
             .build()
 
-        val forecastRequest = PeriodicWorkRequestBuilder<SatelliteForecastWorker>(6, java.util.concurrent.TimeUnit.HOURS)
+        val forecastRequest = PeriodicWorkRequestBuilder<SatelliteForecastWorker>(6, TimeUnit.HOURS)
             .setConstraints(constraints)
             .build()
 
@@ -287,7 +288,7 @@ fun InteractiveForecastSelector(
 
     // 1. Group points by day and prepare colors for the heatmap gradient
     val daysWithHours = remember(uiState.hourlyForecast, locale) {
-        val currentTz = java.util.Calendar.getInstance().timeZone
+        val currentTz = Calendar.getInstance().timeZone
         val sdf = SimpleDateFormat("yyyy-MM-dd", locale).apply {
             timeZone = currentTz
         }
@@ -297,7 +298,7 @@ fun InteractiveForecastSelector(
     }
 
     val daysData = remember(daysWithHours, uiState.language, locale) {
-        val currentTz = java.util.Calendar.getInstance().timeZone
+        val currentTz = Calendar.getInstance().timeZone
         val sdfDay = SimpleDateFormat("EEE", locale).apply {
             timeZone = currentTz
         }
@@ -1913,7 +1914,7 @@ fun SettingsSwitchRow(title: String, checked: Boolean, onCheckedChange: (Boolean
 fun formatTime(timestamp: Long, is24h: Boolean = true): String {
     if (timestamp == 0L) return "--:--"
     val pattern = if (is24h) "HH:mm" else "hh:mm a"
-    val currentTz = java.util.Calendar.getInstance().timeZone
+    val currentTz = Calendar.getInstance().timeZone
     val sdf = SimpleDateFormat(pattern, Locale.getDefault()).apply {
         timeZone = currentTz
     }
