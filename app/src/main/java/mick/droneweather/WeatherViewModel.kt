@@ -344,9 +344,8 @@ class WeatherViewModel(
     }
 
     private fun triggerSatelliteRecalculation() {
-        val currentState = _uiState.value
-        val lat = currentState.mapCenter.latitude
-        val lon = currentState.mapCenter.longitude
+        val lat = _uiState.value.mapCenter.latitude
+        val lon = _uiState.value.mapCenter.longitude
         
         if (lat == 0.0 && lon == 0.0) return
 
@@ -355,7 +354,10 @@ class WeatherViewModel(
                 val predictor = SatellitePredictor()
                 val allTle = repository.getAllTleData()
                 
-                // Filter TLEs based on user settings to match "live" behavior
+                // Get fresh state inside the calculation block to avoid race conditions
+                val currentState = _uiState.value
+                
+                // Filter TLEs based on user settings
                 val filteredTle = allTle.filter { tle ->
                     val name = tle.satelliteName.uppercase()
                     when {
@@ -363,11 +365,11 @@ class WeatherViewModel(
                         name.contains("COSMOS") || name.contains("GLONASS") -> currentState.useGlonass
                         name.contains("GALILEO") -> currentState.useGalileo
                         name.contains("BEIDOU") || name.contains("BDS") -> currentState.useBeidou
-                        else -> true // Include others by default if they are in the GNSS group
+                        else -> true
                     }
                 }
                 
-                Log.d("WeatherViewModel", "Generating sat forecast with ${filteredTle.size} filtered TLEs (total: ${allTle.size})")
+                Log.d("WeatherViewModel", "Generating sat forecast with ${filteredTle.size} TLEs (Thread: ${Thread.currentThread().name})")
                 val satForecasts = predictor.generateMultiDayForecast(
                     lat, 
                     lon, 
@@ -379,22 +381,11 @@ class WeatherViewModel(
                     currentState.useGalileo,
                     currentState.useBeidou
                 )
+                
+                // We ONLY update the repository. 
+                // The Flow in loadSatelliteForecast will handle the UI update safely.
                 repository.updateSatelliteForecasts(satForecasts)
                 
-                _uiState.update { state ->
-                    val selectedHour = state.hourlyForecast.getOrNull(state.selectedIndex)
-                    val correspondingSat = if (selectedHour != null) {
-                        satForecasts.minByOrNull { kotlin.math.abs(it.timestamp - selectedHour.timestamp) }
-                    } else {
-                        satForecasts.firstOrNull()
-                    }
-
-                    state.copy(
-                        satelliteForecast = satForecasts,
-                        forecastSats = correspondingSat?.availableSatellites ?: state.forecastSats,
-                        forecastSatsLocked = correspondingSat?.lockedSatellites ?: state.forecastSatsLocked
-                    ) 
-                }
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Error generating satellite forecast", e)
             }
