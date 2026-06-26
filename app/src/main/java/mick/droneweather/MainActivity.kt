@@ -159,6 +159,12 @@ class MainActivity : AppCompatActivity() {
             oneTimeTleRequest
         )
     }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Ferme l'application et la retire du multitâche dès qu'on appuie sur Home ou Multitâche
+        finishAndRemoveTask()
+    }
 }
 
 @Composable
@@ -885,9 +891,17 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Global back handler to return to DASHBOARD tab
-    BackHandler(enabled = uiState.currentTab != AppTab.DASHBOARD) {
-        viewModel.setTab(AppTab.DASHBOARD)
+    val activity = (context as? androidx.activity.ComponentActivity)
+
+    // Global back handler: 
+    // 1. If not on Dashboard, return to Dashboard
+    // 2. If on Dashboard, close the activity/app
+    BackHandler(enabled = true) {
+        if (uiState.currentTab != AppTab.DASHBOARD) {
+            viewModel.setTab(AppTab.DASHBOARD)
+        } else {
+            activity?.finish()
+        }
     }
 
     // Refresh data when app returns to foreground
