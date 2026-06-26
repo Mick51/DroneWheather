@@ -310,6 +310,64 @@ class WeatherViewModel(
         return Triple(isSafe, statusResId, statusColor)
     }
 
+    private fun triggerSatelliteRecalculation() {
+        val currentState = _uiState.value
+        val lat = currentState.mapCenter.latitude
+        val lon = currentState.mapCenter.longitude
+        
+        if (lat == 0.0 && lon == 0.0) return
+
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                val predictor = SatellitePredictor()
+                val allTle = repository.getAllTleData()
+                
+                // Filter TLEs based on user settings to match "live" behavior
+                val filteredTle = allTle.filter { tle ->
+                    val name = tle.satelliteName.uppercase()
+                    when {
+                        name.contains("GPS") -> currentState.useGps
+                        name.contains("COSMOS") || name.contains("GLONASS") -> currentState.useGlonass
+                        name.contains("GALILEO") -> currentState.useGalileo
+                        name.contains("BEIDOU") || name.contains("BDS") -> currentState.useBeidou
+                        else -> true // Include others by default if they are in the GNSS group
+                    }
+                }
+                
+                Log.d("WeatherViewModel", "Generating sat forecast with ${filteredTle.size} filtered TLEs (total: ${allTle.size})")
+                val satForecasts = predictor.generateMultiDayForecast(
+                    lat, 
+                    lon, 
+                    currentState.kpValue?.toFloat() ?: 0f,
+                    filteredTle,
+                    days = 7,
+                    currentState.useGps,
+                    currentState.useGlonass,
+                    currentState.useGalileo,
+                    currentState.useBeidou
+                )
+                repository.updateSatelliteForecasts(satForecasts)
+                
+                _uiState.update { state ->
+                    val selectedHour = state.hourlyForecast.getOrNull(state.selectedIndex)
+                    val correspondingSat = if (selectedHour != null) {
+                        satForecasts.minByOrNull { kotlin.math.abs(it.timestamp - selectedHour.timestamp) }
+                    } else {
+                        satForecasts.firstOrNull()
+                    }
+
+                    state.copy(
+                        satelliteForecast = satForecasts,
+                        forecastSats = correspondingSat?.availableSatellites ?: state.forecastSats,
+                        forecastSatsLocked = correspondingSat?.lockedSatellites ?: state.forecastSatsLocked
+                    ) 
+                }
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Error generating satellite forecast", e)
+            }
+        }
+    }
+
     fun refresh(city: String, lat: Double? = null, lon: Double? = null, force: Boolean = false) {
         _uiState.update { it.copy(detailedError = null, isLoading = true) }
         
@@ -317,58 +375,16 @@ class WeatherViewModel(
             try {
                 val data = repository.getWeatherData(city, lat, lon, force, _uiState.value.selectedSource)
                 
+                // Update map center and basic data first
+                _uiState.update { it.copy(
+                    cityNameState = data.cityName,
+                    mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else it.mapCenter,
+                    kpValue = data.kpValue
+                ) }
+
                 // Generate Satellite Forecast if we have location
                 if (data.latitude != 0.0 && data.longitude != 0.0) {
-                    viewModelScope.launch(Dispatchers.Default) {
-                        try {
-                            val predictor = SatellitePredictor()
-                            val allTle = repository.getAllTleData()
-                            
-                            // Filter TLEs based on user settings to match "live" behavior
-                            val currentState = _uiState.value
-                            val filteredTle = allTle.filter { tle ->
-                                val name = tle.satelliteName.uppercase()
-                                when {
-                                    name.contains("GPS") -> currentState.useGps
-                                    name.contains("COSMOS") || name.contains("GLONASS") -> currentState.useGlonass
-                                    name.contains("GALILEO") -> currentState.useGalileo
-                                    name.contains("BEIDOU") || name.contains("BDS") -> currentState.useBeidou
-                                    else -> true // Include others by default if they are in the GNSS group
-                                }
-                            }
-                            
-                            Log.d("WeatherViewModel", "Generating sat forecast with ${filteredTle.size} filtered TLEs (total: ${allTle.size})")
-                            val satForecasts = predictor.generateMultiDayForecast(
-                                data.latitude, 
-                                data.longitude, 
-                                data.kpValue?.toFloat() ?: 0f,
-                                filteredTle,
-                                days = 7,
-                                currentState.useGps,
-                                currentState.useGlonass,
-                                currentState.useGalileo,
-                                currentState.useBeidou
-                            )
-                            repository.updateSatelliteForecasts(satForecasts)
-                            
-                            _uiState.update { currentState ->
-                                val selectedHour = currentState.hourlyForecast.getOrNull(currentState.selectedIndex)
-                                val correspondingSat = if (selectedHour != null) {
-                                    satForecasts.minByOrNull { kotlin.math.abs(it.timestamp - selectedHour.timestamp) }
-                                } else {
-                                    satForecasts.firstOrNull()
-                                }
-
-                                currentState.copy(
-                                    satelliteForecast = satForecasts,
-                                    forecastSats = correspondingSat?.availableSatellites ?: currentState.forecastSats,
-                                    forecastSatsLocked = correspondingSat?.lockedSatellites ?: currentState.forecastSatsLocked
-                                ) 
-                            }
-                        } catch (e: Exception) {
-                            Log.e("WeatherViewModel", "Error generating satellite forecast", e)
-                        }
-                    }
+                    triggerSatelliteRecalculation()
                 }
 
                 val (isSafe, statusResId, statusColor) = calculateSafetyStatus(
@@ -550,6 +566,8 @@ class WeatherViewModel(
         useGalileo: Boolean? = null,
         useBeidou: Boolean? = null
     ) {
+        val gnssChanged = useGps != null || useGlonass != null || useGalileo != null || useBeidou != null
+        
         _uiState.update { 
             it.copy(
                 language = language ?: it.language,
@@ -567,6 +585,10 @@ class WeatherViewModel(
                 useGalileo = useGalileo ?: it.useGalileo,
                 useBeidou = useBeidou ?: it.useBeidou
             )
+        }
+
+        if (gnssChanged) {
+            triggerSatelliteRecalculation()
         }
     }
 
