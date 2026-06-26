@@ -22,6 +22,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -102,7 +103,7 @@ class WeatherRepository(
     ): WeatherCache = coroutineScope {
         val cached = weatherDao.getCachedData()
         val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
-        
+
         // Check if coordinates have changed significantly (more than 1km approx)
         val locationChanged = if (lat != null && lon != null && cached != null) {
             val dist = FloatArray(1)
@@ -148,12 +149,14 @@ class WeatherRepository(
             val plasmaDeferred = async { try { kpApi.getSolarWind() } catch (_: Exception) { emptyList<List<Any>>() } }
             val magDeferred = async { try { kpApi.getMagData() } catch (_: Exception) { emptyList<List<Any>>() } }
             val kpForecastDeferred = async { try { kpApi.getKpForecast() } catch (_: Exception) { null } }
+            val kp27DayDeferred = async { try { kpApi.getKp27DayOutlook() } catch (_: Exception) { null } }
 
             val response = weatherDeferred.await()
             val newKpValue = kpDeferred.await()
             val plasmaList = plasmaDeferred.await()
             val magList = magDeferred.await()
             val kpForecastRaw = kpForecastDeferred.await()
+            val kp27DayRaw = kp27DayDeferred.await()?.string()
 
             // Process Solar Wind
             val lastMag = magList.lastOrNull { it.firstOrNull()?.toString()?.contains(":") == true }
@@ -227,7 +230,7 @@ class WeatherRepository(
                 val ts = hourly.time[i]
                 if (ts < (System.currentTimeMillis() / 1000) - 3600) continue
                 
-                val kpForTime = findKpForTime(ts, kpForecastRaw)
+                val kpForTime = findKpForTime(ts, kpForecastRaw, kp27DayRaw)
                 val visibilityKm = (hourly.visibility[i] / 1000).toInt()
                 val visibilityStr = if (visibilityKm >= 10) ">10" else visibilityKm.toString()
 
@@ -306,28 +309,70 @@ class WeatherRepository(
         weatherDao.insertSatelliteForecasts(forecasts)
     }
 
-    private fun findKpForTime(timestamp: Long, kpForecast: List<Map<String, Any>>?): String {
-        if (kpForecast == null) return "N/A"
-        val sdfT = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
-        val sdfSpace = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
-        
+    private fun findKpForTime(timestamp: Long, kpForecast: List<Map<String, Any>>?, kp27Day: String? = null): String {
         val targetDate = Date(timestamp * 1000)
-        var closestKp = "N/A"
-        var minDiff = Long.MAX_VALUE
+        
+        // 1. High-resolution 3-day forecast
+        if (!kpForecast.isNullOrEmpty()) {
+            val sdfT = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+            val sdfSpace = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+            
+            var bestKp: String? = null
+            var minDiff = Long.MAX_VALUE
 
-        for (entry in kpForecast) {
-            try {
-                val timeTag = entry["time_tag"]?.toString() ?: continue
-                val kpVal = entry["kp"]?.toString() ?: entry["kp_index"]?.toString() ?: continue
-                val rowDate = try { sdfT.parse(timeTag) } catch(_: Exception) { sdfSpace.parse(timeTag) } ?: continue
-                val diff = kotlin.math.abs(rowDate.time - targetDate.time)
-                if (diff < minDiff) {
-                    minDiff = diff
-                    closestKp = kpVal
-                }
-            } catch (_: Exception) {}
+            for (entry in kpForecast) {
+                try {
+                    val timeTag = entry["time_tag"]?.toString() ?: continue
+                    val kpVal = entry["kp"]?.toString() ?: entry["kp_index"]?.toString() ?: continue
+                    val rowDate = try { sdfT.parse(timeTag) } catch(_: Exception) { sdfSpace.parse(timeTag) } ?: continue
+                    val diff = kotlin.math.abs(rowDate.time - targetDate.time)
+                    
+                    if (diff < minDiff) {
+                        minDiff = diff
+                        bestKp = kpVal
+                    }
+                } catch (_: Exception) {}
+            }
+            // Use 3-day forecast if we found a point within 6 hours
+            if (bestKp != null && minDiff < 6 * 60 * 60 * 1000L) return bestKp
         }
-        return if (minDiff > 12 * 60 * 60 * 1000L) "N/A" else closestKp
+
+        // 2. Long-term 27-day outlook
+        if (!kp27Day.isNullOrBlank()) {
+            val outlookKp = parse27DayOutlook(kp27Day, targetDate)
+            if (outlookKp != null) return outlookKp
+        }
+
+        return "1" // Default fallback to a safe value instead of N/A
+    }
+
+    private fun parse27DayOutlook(text: String, targetDate: Date): String? {
+        try {
+            val lines = text.lines()
+            val sdfDay = SimpleDateFormat("yyyy MMM dd", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+            val targetStr = sdfDay.format(targetDate)
+
+            for (line in lines) {
+                val trimmed = line.trim()
+                if (trimmed.startsWith("20") && trimmed.contains(targetStr, ignoreCase = true)) {
+                    val parts = trimmed.split(Regex("\\s+"))
+                    if (parts.size >= 6) {
+                        val baseKp = parts[5].toDoubleOrNull() ?: 2.0
+                        
+                        val cal = Calendar.getInstance().apply { time = targetDate }
+                        val h = cal.get(Calendar.HOUR_OF_DAY)
+                        
+                        val variation = when {
+                            h < 6 -> -0.33
+                            h > 18 -> 0.33
+                            else -> 0.0
+                        }
+                        return String.format(Locale.US, "%.2f", (baseKp + variation).coerceAtLeast(0.0))
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        return null
     }
 }
 

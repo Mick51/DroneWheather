@@ -24,6 +24,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -94,6 +96,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import kotlin.time.Duration.Companion.seconds
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: WeatherViewModel
@@ -301,8 +304,12 @@ fun InteractiveForecastSelector(
             val dayName = if (dateString == todayStr) "TODAY" else {
                 sdfDay.format(Date(points.first().timestamp * 1000)).replaceFirstChar { it.uppercase() }
             }
-            val dayColors = points.indices.step(points.size / 4).take(4).map { i ->
-                points[i].safetyColor
+            val dayColors = if (points.size >= 4) {
+                points.indices.step(points.size / 4).take(4).map { i ->
+                    points[i].safetyColor
+                }
+            } else {
+                List(4) { points.firstOrNull()?.safetyColor ?: GreenSafe }
             }
             object {
                 val date = dateString
@@ -389,10 +396,10 @@ fun InteractiveForecastSelector(
                             val widthPx = size.width - 48.dp.toPx()
                             val touchX = (change.position.x - 24.dp.toPx()).coerceIn(0f, widthPx)
                             val progress = touchX / widthPx
-                            val newValue = progress * (dayHours.size - 1)
+                            val newValue = progress * (dayHours.size - 1).coerceAtLeast(0)
                             
                             val oldStep = sliderValue.roundToInt()
-                            val newStep = newValue.roundToInt().coerceIn(0, dayHours.size - 1)
+                            val newStep = newValue.roundToInt().coerceIn(0, (dayHours.size - 1).coerceAtLeast(0))
                             
                             if (oldStep != newStep) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -410,9 +417,9 @@ fun InteractiveForecastSelector(
                         val widthPx = size.width - 48.dp.toPx()
                         val touchX = (offset.x - 24.dp.toPx()).coerceIn(0f, widthPx)
                         val progress = touchX / widthPx
-                        val newValue = progress * (dayHours.size - 1)
+                        val newValue = progress * (dayHours.size - 1).coerceAtLeast(0)
                         
-                        val newStep = newValue.roundToInt().coerceIn(0, dayHours.size - 1)
+                        val newStep = newValue.roundToInt().coerceIn(0, (dayHours.size - 1).coerceAtLeast(0))
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         
                         val globalIdx = uiState.hourlyForecast.indexOf(dayHours[newStep])
@@ -466,8 +473,8 @@ fun InteractiveForecastSelector(
                         .size(30.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        val currentStep = sliderValue.roundToInt().coerceIn(0, dayHours.size - 1)
-                        val rawTime = dayHours[currentStep].time
+                        val currentStep = sliderValue.roundToInt().coerceIn(0, (dayHours.size - 1).coerceAtLeast(0))
+                        val rawTime = dayHours.getOrNull(currentStep)?.time ?: ""
                         
                         // Heure uniquement, adaptée au format pour tenir dans 30dp
                         val displayTime = if (uiState.timeFormat24h) {
@@ -885,9 +892,17 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Global back handler to return to DASHBOARD tab
-    BackHandler(enabled = uiState.currentTab != AppTab.DASHBOARD) {
-        viewModel.setTab(AppTab.DASHBOARD)
+    val activity = (context as? androidx.activity.ComponentActivity)
+
+    // Global back handler: 
+    // 1. If not on Dashboard, return to Dashboard
+    // 2. If on Dashboard, close the activity/app
+    BackHandler(enabled = true) {
+        if (uiState.currentTab != AppTab.DASHBOARD) {
+            viewModel.setTab(AppTab.DASHBOARD)
+        } else {
+            activity?.finish()
+        }
     }
 
     // Refresh data when app returns to foreground

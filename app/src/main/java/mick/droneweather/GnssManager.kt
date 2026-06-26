@@ -93,7 +93,7 @@ class GnssManager(private val context: Context) {
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 1000L, // 1 seconde
-                0f, 
+                0f,
                 locationListener
             )
             

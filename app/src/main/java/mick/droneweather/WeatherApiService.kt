@@ -116,7 +116,8 @@ interface WeatherApiService {
         @Query("daily") daily: String = "sunrise,sunset",
         @Query("wind_speed_unit") windSpeedUnit: String = "kmh",
         @Query("timezone") timezone: String = "auto",
-        @Query("timeformat") timeformat: String = "unixtime"
+        @Query("timeformat") timeformat: String = "unixtime",
+        @Query("forecast_days") days: Int = 7
     ): OpenMeteoResponse
 }
 
@@ -145,6 +146,9 @@ interface KpApiService {
 
     @GET("products/noaa-planetary-k-index-forecast.json")
     suspend fun getKpForecast(): List<Map<String, Any>>
+
+    @GET("text/27-day-outlook.txt")
+    suspend fun getKp27DayOutlook(): okhttp3.ResponseBody
 }
 
 interface GfzApiService {

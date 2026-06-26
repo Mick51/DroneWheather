@@ -708,7 +708,7 @@ class WeatherViewModel(
     fun updateLocationAndData(context: Context, force: Boolean = false) {
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
         _uiState.update { it.copy(isLoading = true) }
-        
+
         // Strategy for Indoor/Difficult conditions:
         val currentState = _uiState.value
 
@@ -822,29 +822,6 @@ class WeatherViewModel(
                 )
             }.toMutableList()
 
-            // FILL TO 7 DAYS: The free API only gives 5 days (40 points).
-            // We add placeholders for day 6 and 7 if missing to satisfy the 7-day UI requirement.
-            if (realForecast.isNotEmpty()) {
-                val lastTimestamp = realForecast.last().timestamp
-                val dayMillis = 24 * 60 * 60L
-                
-                val existingDays = realForecast.map { 
-                    java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(java.util.Date(it.timestamp * 1000))
-                }.distinct().size
-
-                if (existingDays < 7) {
-                    val lastItem = realForecast.last()
-                    for (i in 1..(7 - existingDays)) {
-                        val nextDayTs = lastTimestamp + (i * dayMillis)
-                        realForecast.add(lastItem.copy(
-                            timestamp = nextDayTs,
-                            time = "12:00", // Default time for filler days
-                            isNow = false
-                        ))
-                    }
-                }
-            }
-            
             realForecast
         } catch (e: Exception) {
             Log.e("WeatherViewModel", "Error parsing forecast: ${e.message}")
