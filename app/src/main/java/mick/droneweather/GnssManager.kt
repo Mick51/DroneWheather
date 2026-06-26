@@ -76,13 +76,9 @@ class GnssManager(private val context: Context) {
                 onStatusChanged?.invoke(visibleSats, lockedSats)
             }
 
-            override fun onStarted() {
-                Log.d("GnssManager", "GNSS Tracking Started")
-            }
+            override fun onStarted() {}
 
-            override fun onStopped() {
-                Log.d("GnssManager", "GNSS Tracking Stopped")
-            }
+            override fun onStopped() {}
         }
 
         try {

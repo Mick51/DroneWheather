@@ -26,7 +26,6 @@ import org.orekit.time.TimeScalesFactory
 import org.orekit.utils.Constants
 import org.orekit.utils.IERSConventions
 import java.util.*
-import android.util.Log
 import org.orekit.bodies.GeodeticPoint
 
 class SatellitePredictor {
@@ -105,8 +104,6 @@ class SatellitePredictor {
 
         val finalVisible = if (visible == 0 && tleList.isEmpty()) (maxVisible - 5..maxVisible).random() else visible.coerceAtMost(maxVisible)
         val finalLocked = if (locked == 0 && tleList.isEmpty()) (finalVisible * 0.75).toInt() else locked.coerceAtMost(maxLocked)
-        
-        Log.d("SatellitePredictor", "Final Result ($activeCount const): Vis=$finalVisible, Lock=$finalLocked")
 
         return SatelliteForecast(
             timestamp = timestamp,

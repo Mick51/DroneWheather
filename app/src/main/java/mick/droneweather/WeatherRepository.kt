@@ -103,14 +103,19 @@ class WeatherRepository(
     ): WeatherCache = coroutineScope {
         val cached = weatherDao.getCachedData()
         val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
+        
+        // Check if coordinates have changed significantly (more than 1km approx)
+        val locationChanged = if (lat != null && lon != null && cached != null) {
+            val dist = FloatArray(1)
+            android.location.Location.distanceBetween(lat, lon, cached.latitude, cached.longitude, dist)
+            dist[0] > 1000 // 1km threshold
+        } else false
 
-        if (!force && !isExpired) {
+        if (!force && !isExpired && !locationChanged) {
             return@coroutineScope cached
         }
 
         try {
-            Log.d("WeatherRepository", "Fetching data from source: $source")
-
             // 1. Geocoding if needed
             val targetLat: Double
             val targetLon: Double

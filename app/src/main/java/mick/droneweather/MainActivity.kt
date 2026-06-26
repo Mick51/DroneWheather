@@ -286,14 +286,14 @@ fun InteractiveForecastSelector(
     val locale = configuration.locales[0]
 
     // 1. Group points by day and prepare colors for the heatmap gradient
-    val daysWithHours = remember(uiState.hourlyForecast) {
+    val daysWithHours = remember(uiState.hourlyForecast, locale) {
         val sdf = SimpleDateFormat("yyyy-MM-dd", locale)
         uiState.hourlyForecast.groupBy { 
             sdf.format(Date(it.timestamp * 1000)) 
         }
     }
 
-    val daysData = remember(daysWithHours, uiState.language) {
+    val daysData = remember(daysWithHours, uiState.language, locale) {
         val sdfDay = SimpleDateFormat("EEE", locale)
         val todayStr = SimpleDateFormat("yyyy-MM-dd", locale).format(Date())
 
@@ -301,8 +301,8 @@ fun InteractiveForecastSelector(
             val dayName = if (dateString == todayStr) "TODAY" else {
                 sdfDay.format(Date(points.first().timestamp * 1000)).replaceFirstChar { it.uppercase() }
             }
-            val dayColors = listOf(0, 8, 16, points.size - 1).map { i ->
-                points[i.coerceIn(points.indices)].safetyColor
+            val dayColors = points.indices.step(points.size / 4).take(4).map { i ->
+                points[i].safetyColor
             }
             object {
                 val date = dateString
@@ -312,9 +312,10 @@ fun InteractiveForecastSelector(
         }
     }
 
-    val selectedDayString = remember(uiState.hourlyForecast, uiState.selectedIndex) {
+    val selectedDayString = remember(uiState.hourlyForecast, uiState.selectedIndex, locale) {
         val sdfDate = SimpleDateFormat("yyyy-MM-dd", locale)
-        sdfDate.format(Date(uiState.hourlyForecast[uiState.selectedIndex].timestamp * 1000))
+        val ts = uiState.hourlyForecast.getOrNull(uiState.selectedIndex)?.timestamp ?: 0L
+        sdfDate.format(Date(ts * 1000))
     }
 
     val dayHours = remember(daysWithHours, selectedDayString) {

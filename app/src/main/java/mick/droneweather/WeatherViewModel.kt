@@ -182,6 +182,8 @@ class WeatherViewModel(
 
     private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
+    
+    private var isCalculatingSatellites = false
 
     init {
         loadCachedData()
@@ -344,12 +346,10 @@ class WeatherViewModel(
         return Triple(isSafe, statusResId, statusColor)
     }
 
-    private fun triggerSatelliteRecalculation() {
-        val lat = _uiState.value.mapCenter.latitude
-        val lon = _uiState.value.mapCenter.longitude
-        
-        if (lat == 0.0 && lon == 0.0) return
+    private fun triggerSatelliteRecalculation(lat: Double, lon: Double) {
+        if (lat == 0.0 && lon == 0.0 || isCalculatingSatellites) return
 
+        isCalculatingSatellites = true
         viewModelScope.launch(Dispatchers.Default) {
             try {
                 val predictor = SatellitePredictor()
@@ -370,7 +370,6 @@ class WeatherViewModel(
                     }
                 }
                 
-                Log.d("WeatherViewModel", "Generating sat forecast with ${filteredTle.size} TLEs (Thread: ${Thread.currentThread().name})")
                 val satForecasts = predictor.generateMultiDayForecast(
                     lat, 
                     lon, 
@@ -387,8 +386,9 @@ class WeatherViewModel(
                 // The Flow in loadSatelliteForecast will handle the UI update safely.
                 repository.updateSatelliteForecasts(satForecasts)
                 
-            } catch (e: Exception) {
-                Log.e("WeatherViewModel", "Error generating satellite forecast", e)
+            } catch (_: Exception) {
+            } finally {
+                isCalculatingSatellites = false
             }
         }
     }
@@ -409,7 +409,7 @@ class WeatherViewModel(
 
                 // Generate Satellite Forecast if we have location
                 if (data.latitude != 0.0 && data.longitude != 0.0) {
-                    triggerSatelliteRecalculation()
+                    triggerSatelliteRecalculation(data.latitude, data.longitude)
                 }
 
                 val (isSafe, statusResId, statusColor) = calculateSafetyStatus(
@@ -662,7 +662,8 @@ class WeatherViewModel(
         }
 
         if (gnssChanged) {
-            triggerSatelliteRecalculation()
+            val state = _uiState.value
+            triggerSatelliteRecalculation(state.mapCenter.latitude, state.mapCenter.longitude)
         }
     }
 
@@ -708,30 +709,43 @@ class WeatherViewModel(
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
         _uiState.update { it.copy(isLoading = true) }
         
+        // Strategy for Indoor/Difficult conditions:
+        val currentState = _uiState.value
+
         fusedClient.lastLocation
             .addOnSuccessListener { lastLocation ->
                 if (lastLocation != null && !force) {
                     processLocation(context, lastLocation)
                 } else {
+                    // Try to get fresh location, but with a timeout or fallback if indoors
                     fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                         .addOnSuccessListener { location ->
                             if (location != null) {
                                 processLocation(context, location)
                             } else {
-                                Log.e("WeatherViewModel", "Location is null")
-                                refresh("Bezannes", 49.2217, 3.9928, force = force)
+                                handleLocationFallback(currentState, force)
                             }
                         }
-                        .addOnFailureListener { e ->
-                            Log.e("WeatherViewModel", "Error getting current location: ${e.message}")
-                            refresh("Bezannes", 49.2217, 3.9928, force = force)
+                        .addOnFailureListener {
+                            handleLocationFallback(currentState, force)
                         }
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e("WeatherViewModel", "Error getting last location: ${e.message}")
-                refresh("Bezannes", 49.2217, 3.9928, force = force)
+            .addOnFailureListener {
+                handleLocationFallback(currentState, force)
             }
+    }
+
+    private fun handleLocationFallback(state: WeatherUiState, force: Boolean) {
+        val lat = state.mapCenter.latitude
+        val lon = state.mapCenter.longitude
+        val city = state.cityNameState.ifEmpty { "Bezannes" }
+        
+        if (lat != 0.0 && lon != 0.0) {
+            refresh(city, lat, lon, force = force)
+        } else {
+            refresh("Bezannes", 49.2217, 3.9928, force = force)
+        }
     }
 
     private fun processLocation(context: Context, location: android.location.Location) {

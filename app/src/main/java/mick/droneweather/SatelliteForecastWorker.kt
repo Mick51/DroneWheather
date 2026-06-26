@@ -20,7 +20,6 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.ListenableWorker
-import android.util.Log
 
 class SatelliteForecastWorker(
     context: Context,
@@ -28,8 +27,6 @@ class SatelliteForecastWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): ListenableWorker.Result {
-        Log.d("SatelliteWorker", "Starting background satellite forecast update")
-        
         val db = AppDatabase.getDatabase(applicationContext)
         val weatherDao = db.weatherDao()
         
@@ -47,10 +44,8 @@ class SatelliteForecastWorker(
             weatherDao.clearOldForecasts(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L)
             weatherDao.insertSatelliteForecasts(forecasts)
             
-            Log.d("SatelliteWorker", "Successfully updated ${forecasts.size} forecast points")
             ListenableWorker.Result.success()
         } catch (e: Exception) {
-            Log.e("SatelliteWorker", "Error updating satellite forecast", e)
             ListenableWorker.Result.retry()
         }
     }

@@ -17,7 +17,6 @@
 package mick.droneweather
 
 import android.content.Context
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
@@ -28,8 +27,6 @@ import java.net.URL
 class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            Log.d("TleWorker", "Starting TLE download from CelesTrak")
-            
             // 1. Download TLE file
             // Use the comprehensive GNSS group
             val url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle"
@@ -49,15 +46,12 @@ class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineW
             dao.clearTleData() // Clear old data to apply the new strict filters
             dao.insertTleData(satelliteList)
             
-            Log.d("TleWorker", "Cleared DB and saved ${satelliteList.size} OPERATIONAL TLE entries")
-
             // Trigger an immediate satellite forecast update since we have new orbital data
             val forecastRequest = androidx.work.OneTimeWorkRequestBuilder<SatelliteForecastWorker>().build()
             androidx.work.WorkManager.getInstance(applicationContext).enqueue(forecastRequest)
 
             Result.success()
-        } catch (e: Exception) {
-            Log.e("TleWorker", "Error downloading TLE data", e)
+        } catch (_: Exception) {
             Result.retry()
         }
     }
