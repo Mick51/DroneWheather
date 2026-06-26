@@ -90,7 +90,11 @@ import androidx.compose.animation.core.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: WeatherViewModel
@@ -872,10 +876,22 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
 fun SkyGoDashboard(viewModel: WeatherViewModel) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // Global back handler to return to DASHBOARD tab
     BackHandler(enabled = uiState.currentTab != AppTab.DASHBOARD) {
         viewModel.setTab(AppTab.DASHBOARD)
+    }
+
+    // Refresh data when app returns to foreground
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.updateLocationAndData(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(uiState.language) {
@@ -925,6 +941,9 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     LaunchedEffect(Unit) {
         if (!permissionsGranted) {
             permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        } else {
+            // Déjà accordé, on met à jour la position et les données
+            viewModel.updateLocationAndData(context)
         }
         // Initialiser le format 24h selon les paramètres du système
         viewModel.updateSettings(timeFormat24h = android.text.format.DateFormat.is24HourFormat(context))
@@ -1563,7 +1582,7 @@ fun HelpScreen() {
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "DroneWeather v1.1 Beta",
+            text = "DroneWeather v1.2 Beta",
             style = MaterialTheme.typography.labelMedium,
             color = Color.Gray,
             modifier = Modifier.padding(top = 4.dp)

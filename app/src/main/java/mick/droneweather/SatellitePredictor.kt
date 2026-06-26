@@ -62,11 +62,22 @@ class SatellitePredictor {
         }
 
         // Dynamic cap based on selected constellations
-        // 4 active (GPS+GLO+GAL+BDS) -> ~40 visible, ~30 locked
-        // 3 active (GPS+GLO+GAL) -> ~30 visible, ~22 locked
+        // 4 active (GPS+GLO+GAL+BDS) -> DJI/M10 Realism: ~38 visible, ~30 locked max
+        // 3 active (GPS+GLO+GAL) -> ~28 visible, ~24 locked max
         val activeCount = (if(useGps) 1 else 0) + (if(useGlonass) 1 else 0) + (if(useGalileo) 1 else 0) + (if(useBeidou) 1 else 0)
-        val maxVisible = (activeCount * 11).coerceAtLeast(12)
-        val maxLocked = (activeCount * 8).coerceAtLeast(8)
+        
+        val maxVisible = when(activeCount) {
+            4 -> 38
+            3 -> 28
+            2 -> 18
+            else -> 12
+        }
+        val maxLocked = when(activeCount) {
+            4 -> 30
+            3 -> 24
+            2 -> 15
+            else -> 8
+        }
 
         for (tleData in tleList) {
             try {

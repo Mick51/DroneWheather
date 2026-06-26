@@ -472,11 +472,19 @@ class WeatherViewModel(
         val state = _uiState.value
         val activeConstellations = (if(state.useGps) 1 else 0) + (if(state.useGlonass) 1 else 0) + (if(state.useGalileo) 1 else 0) + (if(state.useBeidou) 1 else 0)
         
-        // Dynamic cap for live data:
-        // ~40 visible / ~32 locked with 4 constellations
-        // ~30 visible / ~24 locked with 3 constellations
-        val maxVis = (activeConstellations * 11).coerceAtLeast(12)
-        val maxLock = (activeConstellations * 8).coerceAtLeast(8)
+        // Dynamic cap for live data to match Predictor Realism:
+        val maxVis = when(activeConstellations) {
+            4 -> 38
+            3 -> 28
+            2 -> 18
+            else -> 12
+        }
+        val maxLock = when(activeConstellations) {
+            4 -> 30
+            3 -> 24
+            2 -> 15
+            else -> 8
+        }
 
         _uiState.update { it.copy(
             sats = visible.coerceAtMost(maxVis), 

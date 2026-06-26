@@ -86,8 +86,10 @@ class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineW
                     name.contains("GSAT") || name.contains("GALILEO") -> true
                     // BEIDOU: BD/BDS series
                     name.contains("BEIDOU") || name.contains("BDS") -> {
-                        // Filter out non-MEO satellites if needed, but for now just general operational check
-                        !name.contains("G") // Geo satellites are fixed and often low elevation
+                        // STRICT FILTER: Drones mainly use MEO satellites (higher PRNs/specific series)
+                        // and ignore GEO/IGSO satellites which are often too low or fixed.
+                        // On CelesTrak, MEOs are typically NOT marked with G or IGSO.
+                        !name.contains(" G") && !name.contains("IGSO")
                     }
                     else -> false
                 }
