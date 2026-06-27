@@ -30,11 +30,13 @@ import org.orekit.bodies.GeodeticPoint
 
 class SatellitePredictor {
 
-    private val earth = OneAxisEllipsoid(
-        Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-        Constants.WGS84_EARTH_FLATTENING,
-        FramesFactory.getITRF(IERSConventions.IERS_2010, false)
-    )
+    private val earth by lazy {
+        OneAxisEllipsoid(
+            Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+            Constants.WGS84_EARTH_FLATTENING,
+            FramesFactory.getITRF(IERSConventions.IERS_2010, false)
+        )
+    }
 
     fun calculatePrediction(
         timestamp: Long,

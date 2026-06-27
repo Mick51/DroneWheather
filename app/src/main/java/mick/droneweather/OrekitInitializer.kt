@@ -46,12 +46,10 @@ object OrekitInitializer {
             Log.d("OrekitInit", "Assets found: ${assetsList.joinToString()}")
             
             // Always copy individual assets first
-            Log.d("OrekitInit", "Copying individual assets")
             copyAssetsToInternal(context, "", dataDir)
             
             // Then extract zip if present (it might contain more or newer data)
             if (assetsList.contains("orekit-data.zip")) {
-                Log.d("OrekitInit", "Extracting orekit-data.zip")
                 extractZip(assetManager.open("orekit-data.zip"), dataDir)
             }
             
