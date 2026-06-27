@@ -200,7 +200,7 @@ class WeatherViewModel(
         loadSatelliteForecast()
     }
 
-    fun checkForUpdates(context: Context, manual: Boolean = false, currentVersionCode: Long = 5L) {
+    fun checkForUpdates(context: Context, manual: Boolean = false, currentVersionCode: Long) {
         viewModelScope.launch {
             if (manual) _uiState.update { it.copy(lastUpdateCheckStatus = UpdateCheckStatus.CHECKING) }
             val updateManager = UpdateManager(context)
