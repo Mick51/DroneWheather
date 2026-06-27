@@ -174,12 +174,12 @@ data class WeatherUiState(
     val satelliteForecast: List<SatelliteForecast> = emptyList(),
 
     val checklist: List<ChecklistItem> = listOf(
-        ChecklistItem(text = "VÃƒÂ©rifier les autorisations et l'espace aÃƒÂ©rien"),
-        ChecklistItem(text = "Inspecter le drone (hÃƒÂ©lices, batterie et structure)"),
-        ChecklistItem(text = "Planifier l'itinÃƒÂ©raire"),
-        ChecklistItem(text = "VÃƒÂ©rifier les conditions mÃƒÂ©tÃƒÂ©orologiques"),
-        ChecklistItem(text = "Calibrer la boussole et dÃƒÂ©finir le point de dÃƒÂ©part"),
-        ChecklistItem(text = "S'assurer d'une zone de dÃƒÂ©collage sÃƒÂ»re")
+        ChecklistItem(text = "Vérifier les autorisations et l'espace aérien"),
+        ChecklistItem(text = "Inspecter le drone (hélices, batterie et structure)"),
+        ChecklistItem(text = "Planifier l'itinéraire"),
+        ChecklistItem(text = "Vérifier les conditions météorologiques"),
+        ChecklistItem(text = "Calibrer la boussole et définir le point de départ"),
+        ChecklistItem(text = "S'assurer d'une zone de décollage sûre")
     )
 )
 
