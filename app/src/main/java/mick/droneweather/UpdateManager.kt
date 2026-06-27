@@ -23,33 +23,18 @@ class UpdateManager(private val context: Context) {
             try {
                 val latest = RetrofitInstance.githubApi.getLatestRelease()
                 
-                // 1. Try to extract version code from tag (e.g., "v5" or "5")
+                // Extract version code from tag (e.g., "v5" -> 5)
                 val tagDigits = latest.tagName.replace(Regex("[^0-9]"), "")
                 val latestVersionCode = tagDigits.toLongOrNull() ?: 0L
                 
-                Log.d("UpdateManager", "DEBUG_UPDATE: Local Code=$currentVersionCode, GitHub Tag=${latest.tagName} (Extracted Code=$latestVersionCode)")
+                Log.d("UpdateManager", "DEBUG_UPDATE: Local=$currentVersionCode, GitHub=$latestVersionCode (Tag=${latest.tagName})")
 
-                // 2. Compare with currentVersionCode
-                if (latestVersionCode > 0) {
-                    if (latestVersionCode > currentVersionCode) {
-                        Log.d("UpdateManager", "DEBUG_UPDATE: Higher version code found on GitHub")
-                        return@withContext latest
-                    } else {
-                        Log.d("UpdateManager", "DEBUG_UPDATE: Version code is identical or lower ($latestVersionCode <= $currentVersionCode), skipping update")
-                        return@withContext null
-                    }
-                }
-
-                // 3. Fallback to name comparison ONLY if latestVersionCode extraction failed (is 0)
-                val currentVersionName = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
-                val cleanGitHubName = latest.tagName.removePrefix("v").trim()
-                val cleanLocalName = currentVersionName.trim()
-
-                if (cleanGitHubName != cleanLocalName && !cleanLocalName.contains(cleanGitHubName)) {
-                    Log.d("UpdateManager", "DEBUG_UPDATE: Version names differ: Local=$currentVersionName, GitHub=${latest.tagName}")
+                // STRICT COMPARISON: Only update if GitHub is strictly newer
+                if (latestVersionCode > currentVersionCode) {
+                    Log.d("UpdateManager", "DEBUG_UPDATE: Update available!")
                     latest
                 } else {
-                    Log.d("UpdateManager", "DEBUG_UPDATE: Already up to date (names match or local is more detailed)")
+                    Log.d("UpdateManager", "DEBUG_UPDATE: Up to date.")
                     null
                 }
             } catch (e: Exception) {
