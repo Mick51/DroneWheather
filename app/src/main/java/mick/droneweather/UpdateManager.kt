@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -22,15 +23,21 @@ class UpdateManager(private val context: Context) {
         return withContext(Dispatchers.IO) {
             try {
                 val latest = RetrofitInstance.githubApi.getLatestRelease()
-                // Extract version code from tag (assuming tag is like "v1.3" or just version number)
-                // However, the best way is to compare tag names or use a dedicated version file.
-                // For simplicity, let's assume we want to update if tagName != current app version name
-                // or if we can parse a number.
-                val currentVersionName = context.packageManager.getPackageInfo(context.packageName, 0).versionName
-                if (latest.tagName != "v$currentVersionName" && latest.tagName != currentVersionName) {
+                
+                // 1. Try to extract version code from tag (e.g., "v4" or "4")
+                val latestVersionCode = latest.tagName.replace(Regex("[^0-9]"), "").toLongOrNull() ?: 0L
+                
+                // 2. Compare with currentVersionCode
+                if (latestVersionCode > currentVersionCode) {
                     latest
                 } else {
-                    null
+                    // Fallback to name comparison if code comparison isn't possible or equal
+                    val currentVersionName = context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    if (latest.tagName != "v$currentVersionName" && latest.tagName != currentVersionName) {
+                        latest
+                    } else {
+                        null
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("UpdateManager", "Check failed: ${e.message}")
@@ -89,7 +96,7 @@ class UpdateManager(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
                 val settingsIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                    data = Uri.parse("package:${context.packageName}")
+                    data = "package:${context.packageName}".toUri()
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(settingsIntent)
