@@ -77,11 +77,8 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mick.droneweather.ui.theme.DroneWeatherTheme
-import mick.droneweather.ui.theme.AppBackground
 import mick.droneweather.ui.theme.NeonGreen
 import mick.droneweather.ui.theme.GreenSafe
-import mick.droneweather.ui.theme.YellowWarn
-import mick.droneweather.ui.theme.RedDanger
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit

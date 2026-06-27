@@ -118,7 +118,8 @@ fun SatelliteForecastChart(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+            val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+            val sdf = SimpleDateFormat("HH:mm", locale)
             Text(sdf.format(Date(forecasts.first().timestamp * 1000)), color = Color.Gray, fontSize = 10.sp)
             Text(sdf.format(Date(forecasts[forecasts.size / 2].timestamp * 1000)), color = Color.Gray, fontSize = 10.sp)
             Text(sdf.format(Date(forecasts.last().timestamp * 1000)), color = Color.Gray, fontSize = 10.sp)
