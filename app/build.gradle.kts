@@ -14,8 +14,8 @@ android {
         applicationId = "mick.droneweather"
         minSdk = 24
         targetSdk = 37
-        versionCode = 3
-        versionName = "1.2 Beta"
+        versionCode = 4
+        versionName = "1.3 Beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

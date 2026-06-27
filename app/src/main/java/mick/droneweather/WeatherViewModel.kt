@@ -295,6 +295,11 @@ class WeatherViewModel(
                     else -> GreenSafe
                 }
             }
+            "Sats" -> when {
+                doubleValue < 8 -> RedDanger
+                doubleValue < 12 -> YellowWarn
+                else -> GreenSafe
+            }
             else -> GreenSafe
         }
     }

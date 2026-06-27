@@ -821,7 +821,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                         AsyncImage(model = "https://openweathermap.org/img/wn/${uiState.weatherIcon ?: "01d"}@2x.png", contentDescription = null, modifier = Modifier.size(28.dp))
                     }
                     MetricCard(title = stringResource(R.string.metric_wind_air), value = "${uiState.windSpeed} km/h", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_gusts); detailDesc = context.getString(R.string.desc_gusts); showDetail = true })
                     Card(modifier = Modifier.weight(1f).padding(1.dp).fillMaxSize(), colors = CardDefaults.cardColors(containerColor = GreenSafe), shape = RoundedCornerShape(8.dp), onClick = { detailTitle = context.getString(R.string.metric_wind_dir); detailDesc = context.getString(R.string.desc_wind_dir); showDetail = true }) {
                         Column(modifier = Modifier.fillMaxSize().padding(2.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = stringResource(R.string.metric_wind_dir), style = MaterialTheme.typography.labelSmall, color = Color.Black.copy(alpha = 0.6f), maxLines = 1)
@@ -838,10 +838,11 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(
                         title = stringResource(R.string.metric_sats_vis), 
                         value = uiState.forecastSats.toString(), 
+                        backgroundColor = viewModel.getCardColor("Sats", uiState.forecastSats, uiState),
                         isLandscape = true, 
                         modifier = Modifier.weight(1f), 
                         onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
@@ -849,6 +850,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     MetricCard(
                         title = stringResource(R.string.metric_sats_lock), 
                         value = "${uiState.forecastSatsLocked}", 
+                        backgroundColor = viewModel.getCardColor("Sats", uiState.forecastSatsLocked, uiState),
                         isLandscape = true, 
                         modifier = Modifier.weight(1f), 
                         onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
@@ -879,16 +881,18 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(
                         title = stringResource(R.string.metric_sats_vis), 
                         value = uiState.forecastSats.toString(), 
+                        backgroundColor = viewModel.getCardColor("Sats", uiState.forecastSats, uiState),
                         modifier = Modifier.weight(1f), 
                         onClick = { detailTitle = context.getString(R.string.metric_sats_vis); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
                     )
                     MetricCard(
                         title = stringResource(R.string.metric_sats_lock), 
                         value = "${uiState.forecastSatsLocked}",
+                        backgroundColor = viewModel.getCardColor("Sats", uiState.forecastSatsLocked, uiState),
                         modifier = Modifier.weight(1f), 
                         onClick = { detailTitle = context.getString(R.string.metric_sats_lock); detailDesc = context.getString(R.string.desc_sats); showDetail = true }
                     )
@@ -1321,11 +1325,7 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(altitudes) { (alt, speed) ->
                     val speedInt = speed.toIntOrNull() ?: 0
-                    val rowColor = when {
-                        speedInt >= 25 -> RedDanger
-                        speedInt >= 15 -> YellowWarn
-                        else -> GreenSafe
-                    }
+                    val rowColor = viewModel.getCardColor("Vent", speed, uiState)
                     
                     Row(
                         modifier = Modifier
@@ -1632,7 +1632,7 @@ fun HelpScreen() {
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "DroneWeather v1.2 Beta",
+            text = "DroneWeather v1.3 Beta",
             style = MaterialTheme.typography.labelMedium,
             color = Color.Gray,
             modifier = Modifier.padding(top = 4.dp)
