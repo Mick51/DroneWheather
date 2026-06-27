@@ -131,9 +131,59 @@ class SatellitePredictor {
         val step = 3600 // 1 hour steps for 7 days (168 points)
         val points = days * 24
 
+        val userPoint = GeodeticPoint(Math.toRadians(startLat), Math.toRadians(startLon), 0.0)
+        val topoFrame = TopocentricFrame(earth, userPoint, "UserLocation")
+        val utc = TimeScalesFactory.getUTC()
+        val gcrf = FramesFactory.getGCRF()
+
+        // Pre-create propagators to avoid heavy object creation in the loop
+        val propagators = tleList.mapNotNull { tleData ->
+            try {
+                val tle = TLE(tleData.line1, tleData.line2)
+                TLEPropagator.selectExtrapolator(tle)
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        val lockProbabilityBase = when {
+            currentKp >= 5f -> 0.4f
+            currentKp >= 3f -> 0.7f
+            else -> 0.95f
+        }
+
+        val activeCount = (if(useGps) 1 else 0) + (if(useGlonass) 1 else 0) + (if(useGalileo) 1 else 0) + (if(useBeidou) 1 else 0)
+        val maxVisible = when(activeCount) { 4 -> 38; 3 -> 28; 2 -> 18; else -> 12 }
+        val maxLocked = when(activeCount) { 4 -> 30; 3 -> 24; 2 -> 15; else -> 8 }
+
         for (i in 0 until points) {
             val targetTime = now + (i * step)
-            forecasts.add(calculatePrediction(targetTime, startLat, startLon, currentKp, tleList, useGps, useGlonass, useGalileo, useBeidou))
+            val date = AbsoluteDate(Date(targetTime * 1000), utc)
+            
+            var visible = 0
+            var locked = 0
+
+            for (propagator in propagators) {
+                try {
+                    val pvCoordinates = propagator.getPVCoordinates(date, gcrf)
+                    val elevation = topoFrame.getElevation(pvCoordinates.position, gcrf, date)
+                    val elevationDeg = Math.toDegrees(elevation)
+                    
+                    if (elevationDeg > 15.0) {
+                        visible++
+                        val elevationWeight = (elevationDeg - 15.0) / 75.0
+                        val adjustedLockProb = lockProbabilityBase * (0.75f + 0.25f * elevationWeight.toFloat())
+                        if (Math.random() < adjustedLockProb) {
+                            locked++
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
+            val finalVisible = if (visible == 0 && propagators.isEmpty()) (maxVisible - 5..maxVisible).random() else visible.coerceAtMost(maxVisible)
+            val finalLocked = if (locked == 0 && propagators.isEmpty()) (finalVisible * 0.75).toInt() else locked.coerceAtMost(maxLocked)
+
+            forecasts.add(SatelliteForecast(targetTime, finalVisible, finalLocked, currentKp))
         }
 
         return forecasts

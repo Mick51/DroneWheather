@@ -461,7 +461,9 @@ class WeatherViewModel(
         
         viewModelScope.launch {
             try {
-                val data = repository.getWeatherData(city, lat, lon, force)
+                val data = withContext(Dispatchers.IO) {
+                    repository.getWeatherData(city, lat, lon, force)
+                }
                 
                 // Update map center and basic data first
                 _uiState.update { it.copy(
@@ -475,12 +477,15 @@ class WeatherViewModel(
                     triggerSatelliteRecalculation(data.latitude, data.longitude)
                 }
 
+                val forecast = withContext(Dispatchers.Default) {
+                    parseForecast(data.forecastJson)
+                }
+                
+                val now = System.currentTimeMillis() / 1000
+
                 val (isSafe, statusResId, statusColor) = calculateSafetyStatus(
                     data.windSpeed, data.windGust, data.kpValue, data.currentBz, data.precip, data.temperature
                 )
-
-                val forecast = parseForecast(data.forecastJson)
-                val now = System.currentTimeMillis() / 1000
 
                 _uiState.update { state ->
                     state.copy(
