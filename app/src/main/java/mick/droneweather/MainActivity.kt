@@ -116,6 +116,25 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val uiState by viewModel.uiState.collectAsState()
+            
+            val currentVersionCode = remember {
+                try {
+                    val pInfo = packageManager.getPackageInfo(packageName, 0)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        pInfo.longVersionCode
+                    } else {
+                        @Suppress("DEPRECATION")
+                        pInfo.versionCode.toLong()
+                    }
+                } catch (_: Exception) {
+                    5L
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                viewModel.checkForUpdates(this@MainActivity, currentVersionCode = currentVersionCode)
+            }
+
             DroneWeatherTheme(darkTheme = uiState.darkTheme) {
                 SkyGoDashboard(viewModel)
             }
@@ -1058,7 +1077,11 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
             viewModel.updateLocationAndData(context)
         }
         // Vérification des mises à jour au démarrage
-        viewModel.checkForUpdates(context)
+        val currentVersionCode = try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) pInfo.longVersionCode else pInfo.versionCode.toLong()
+        } catch (_: Exception) { 5L }
+        viewModel.checkForUpdates(context, currentVersionCode = currentVersionCode)
 
         // Initialiser le format 24h selon les paramètres du système
         viewModel.updateSettings(timeFormat24h = android.text.format.DateFormat.is24HourFormat(context))
@@ -1673,6 +1696,15 @@ fun SafeZoneMapScreen(uiState: WeatherUiState) {
 fun HelpScreen(viewModel: WeatherViewModel) { 
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    
+    val currentVersionName = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        } catch (_: Exception) {
+            "1.4 Beta"
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1694,7 +1726,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "DroneWeather v1.3 Beta",
+            text = "DroneWeather v$currentVersionName",
             style = MaterialTheme.typography.labelMedium,
             color = Color.Gray,
             modifier = Modifier.padding(top = 4.dp)
@@ -1790,7 +1822,13 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Button(
-                    onClick = { viewModel.checkForUpdates(context, manual = true) },
+                    onClick = { 
+                    val currentVersionCode = try {
+                        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) pInfo.longVersionCode else pInfo.versionCode.toLong()
+                    } catch (_: Exception) { 5L }
+                    viewModel.checkForUpdates(context, manual = true, currentVersionCode = currentVersionCode) 
+                },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B0FF)),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth(),
