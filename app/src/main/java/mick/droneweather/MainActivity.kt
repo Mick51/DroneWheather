@@ -913,6 +913,61 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Update Dialog
+    if (uiState.updateAvailable != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissUpdate() },
+            title = { Text(stringResource(R.string.update_title), fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.update_message, uiState.updateAvailable!!.tagName))
+                    if (uiState.isDownloadingUpdate) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        LinearProgressIndicator(
+                            progress = { uiState.updateProgress },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = NeonGreen
+                        )
+                        Text(
+                            text = "${(uiState.updateProgress * 100).toInt()}%",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.updateAvailable!!.body,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            maxLines = 5,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (!uiState.isDownloadingUpdate) {
+                    Button(
+                        onClick = { viewModel.downloadUpdate(context) },
+                        colors = ButtonDefaults.buttonColors(containerColor = NeonGreen)
+                    ) {
+                        Text(stringResource(R.string.btn_update), color = Color.Black)
+                    }
+                }
+            },
+            dismissButton = {
+                if (!uiState.isDownloadingUpdate) {
+                    TextButton(onClick = { viewModel.dismissUpdate() }) {
+                        Text(stringResource(R.string.btn_later), color = Color.Gray)
+                    }
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
     val activity = (context as? androidx.activity.ComponentActivity)
 
     // Global back handler: 
@@ -1002,6 +1057,9 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
             // Déjà accordé, on met à jour la position et les données
             viewModel.updateLocationAndData(context)
         }
+        // Vérification des mises à jour au démarrage
+        viewModel.checkForUpdates(context)
+
         // Initialiser le format 24h selon les paramètres du système
         viewModel.updateSettings(timeFormat24h = android.text.format.DateFormat.is24HourFormat(context))
     }
@@ -1025,7 +1083,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
                 AppTab.DASHBOARD -> DashboardContent(uiState, viewModel, context)
                 AppTab.TOOLS -> ToolScreen(viewModel)
                 AppTab.COMMUNITY -> CommunityScreen()
-                AppTab.HELP -> HelpScreen()
+                AppTab.HELP -> HelpScreen(viewModel)
                 AppTab.SETTINGS -> SettingsScreen(viewModel)
             }
         }
@@ -1612,8 +1670,9 @@ fun SafeZoneMapScreen(uiState: WeatherUiState) {
 }
 @Composable fun CommunityScreen() { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.tab_community), color = Color.White) } }
 @Composable 
-fun HelpScreen() { 
+fun HelpScreen(viewModel: WeatherViewModel) { 
     val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1685,6 +1744,60 @@ fun HelpScreen() {
                         context.startActivity(intent)
                     }
                 )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Update Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.check_updates_title),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelMedium
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                when (uiState.lastUpdateCheckStatus) {
+                    UpdateCheckStatus.CHECKING -> {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color(0xFF00B0FF), strokeWidth = 2.dp)
+                        Text(stringResource(R.string.update_status_checking), style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                    }
+                    UpdateCheckStatus.UP_TO_DATE -> {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = GreenSafe, modifier = Modifier.size(24.dp))
+                        Text(stringResource(R.string.update_status_uptodate), style = MaterialTheme.typography.bodySmall, color = GreenSafe, modifier = Modifier.padding(top = 8.dp))
+                    }
+                    UpdateCheckStatus.UPDATE_FOUND -> {
+                        Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = NeonGreen, modifier = Modifier.size(24.dp))
+                        Text(stringResource(R.string.update_status_found), style = MaterialTheme.typography.bodySmall, color = NeonGreen, modifier = Modifier.padding(top = 8.dp))
+                    }
+                    UpdateCheckStatus.ERROR -> {
+                        Icon(Icons.Default.Error, contentDescription = null, tint = Color.Red, modifier = Modifier.size(24.dp))
+                        Text(stringResource(R.string.update_status_error), style = MaterialTheme.typography.bodySmall, color = Color.Red, modifier = Modifier.padding(top = 8.dp))
+                    }
+                    else -> {}
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Button(
+                    onClick = { viewModel.checkForUpdates(context, manual = true) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B0FF)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.lastUpdateCheckStatus != UpdateCheckStatus.CHECKING
+                ) {
+                    Text(stringResource(R.string.btn_check_updates), color = Color.White)
+                }
             }
         }
     }

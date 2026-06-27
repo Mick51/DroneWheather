@@ -24,6 +24,7 @@ object RetrofitInstance {
     private const val GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/"
     private const val NOAA_URL = "https://services.swpc.noaa.gov/"
     private const val GFZ_URL = "https://kp.gfz-potsdam.de/"
+    private const val GITHUB_URL = "https://api.github.com/"
 
     val api: WeatherApiService by lazy {
         Retrofit.Builder()
@@ -55,6 +56,14 @@ object RetrofitInstance {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(GfzApiService::class.java)
+    }
+
+    val githubApi: GitHubApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(GITHUB_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GitHubApiService::class.java)
     }
 }
 

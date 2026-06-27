@@ -80,6 +80,10 @@ enum class DroneType {
     DJI_MINI, DJI_AIR, DJI_MAVIC, CUSTOM
 }
 
+enum class UpdateCheckStatus {
+    IDLE, CHECKING, UP_TO_DATE, UPDATE_FOUND, ERROR
+}
+
 enum class DistanceUnit { METERS, FEET, KILOMETERS }
 
 data class ChecklistItem(
@@ -161,6 +165,11 @@ data class WeatherUiState(
     val alertWeather: Boolean = true,
     val morningForecast: Boolean = false,
     
+    val updateAvailable: GitHubRelease? = null,
+    val updateProgress: Float = 0f,
+    val isDownloadingUpdate: Boolean = false,
+    val lastUpdateCheckStatus: UpdateCheckStatus = UpdateCheckStatus.IDLE,
+    
     val deviceAzimuth: Float = 0f,
     val satelliteForecast: List<SatelliteForecast> = emptyList(),
 
@@ -189,6 +198,53 @@ class WeatherViewModel(
     init {
         loadCachedData()
         loadSatelliteForecast()
+    }
+
+    fun checkForUpdates(context: Context, manual: Boolean = false) {
+        viewModelScope.launch {
+            if (manual) _uiState.update { it.copy(lastUpdateCheckStatus = UpdateCheckStatus.CHECKING) }
+            val updateManager = UpdateManager(context)
+            val release = updateManager.checkForUpdates(4L) // current versionCode
+            
+            _uiState.update { state ->
+                if (release != null) {
+                    state.copy(
+                        updateAvailable = release,
+                        lastUpdateCheckStatus = UpdateCheckStatus.UPDATE_FOUND
+                    )
+                } else {
+                    state.copy(
+                        updateAvailable = null,
+                        lastUpdateCheckStatus = if (manual) UpdateCheckStatus.UP_TO_DATE else UpdateCheckStatus.IDLE
+                    )
+                }
+            }
+        }
+    }
+
+    fun downloadUpdate(context: Context) {
+        val release = _uiState.value.updateAvailable ?: return
+        _uiState.update { it.copy(isDownloadingUpdate = true) }
+        viewModelScope.launch {
+            try {
+                val updateManager = UpdateManager(context)
+                updateManager.downloadAndInstall(release) { progress ->
+                    _uiState.update { it.copy(updateProgress = progress) }
+                }
+                // If we reach here, the installation intent was started.
+                // We keep updateAvailable so the user can try again if they canceled the installer,
+                // but we might want to hide the "Downloading" state.
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Update failed", e)
+                // Optionally update state with error message
+            } finally {
+                _uiState.update { it.copy(isDownloadingUpdate = false) }
+            }
+        }
+    }
+
+    fun dismissUpdate() {
+        _uiState.update { it.copy(updateAvailable = null) }
     }
 
     private fun loadInitialState(): WeatherUiState {

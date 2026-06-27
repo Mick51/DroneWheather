@@ -128,4 +128,14 @@
     <string name="chart_sat_visible">Visibles</string>
     <string name="settings_precip_label">Précipitations</string>
     <string name="settings_precip_max">Probabilité max autorisée : %1$d%%</string>
+    <string name="update_title">Mise à jour disponible</string>
+    <string name="update_message">Une nouvelle version (%1$s) est disponible. Voulez-vous la télécharger et l\'installer maintenant ?</string>
+    <string name="btn_update">Mettre à jour</string>
+    <string name="btn_later">Plus tard</string>
+    <string name="check_updates_title">Mise à jour de l\'app</string>
+    <string name="btn_check_updates">Vérifier les mises à jour</string>
+    <string name="update_status_checking">Recherche de mises à jour…</string>
+    <string name="update_status_uptodate">Votre application est à jour.</string>
+    <string name="update_status_found">Une nouvelle mise à jour est disponible !</string>
+    <string name="update_status_error">Erreur lors de la vérification.</string>
 </resources>

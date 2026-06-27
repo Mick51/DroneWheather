@@ -96,6 +96,21 @@ data class GfzKpResponse(
     @SerializedName("datetime") val datetime: List<String>
 )
 
+// --- GitHub Models for Updates ---
+
+data class GitHubRelease(
+    @SerializedName("tag_name") val tagName: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("body") val body: String,
+    @SerializedName("assets") val assets: List<GitHubAsset>
+)
+
+data class GitHubAsset(
+    @SerializedName("name") val name: String,
+    @SerializedName("browser_download_url") val downloadUrl: String,
+    @SerializedName("content_type") val contentType: String
+)
+
 // --- API Interfaces ---
 
 interface WeatherApiService {
@@ -150,5 +165,10 @@ interface GfzApiService {
         @Query("start") start: String,
         @Query("end") end: String
     ): GfzKpResponse
+}
+
+interface GitHubApiService {
+    @GET("repos/Mick51/DroneWheather/releases/latest")
+    suspend fun getLatestRelease(): GitHubRelease
 }
 

@@ -128,4 +128,14 @@
     <string name="chart_sat_visible">Widoczne</string>
     <string name="settings_precip_label">Opady</string>
     <string name="settings_precip_max">Maks. dopuszczalne opady: %1$d%%</string>
+    <string name="update_title">Dostępna aktualizacja</string>
+    <string name="update_message">Dostępna jest nowa wersja (%1$s). Czy chcesz ją teraz pobrać i zainstalować?</string>
+    <string name="btn_update">Aktualizuj</string>
+    <string name="btn_later">Później</string>
+    <string name="check_updates_title">Aktualizacja aplikacji</string>
+    <string name="btn_check_updates">Sprawdź aktualizacje</string>
+    <string name="update_status_checking">Sprawdzanie aktualizacji…</string>
+    <string name="update_status_uptodate">Twoja aplikacja jest aktualna.</string>
+    <string name="update_status_found">Dostępna jest nowa aktualizacja!</string>
+    <string name="update_status_error">Błąd podczas sprawdzania aktualizacji.</string>
 </resources>
