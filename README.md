@@ -32,7 +32,16 @@ Most drone weather apps provide basic estimates. DroneWeather stands out through
 - **Satellite Math**: Orekit (Space dynamics library).
 - **Background Tasks**: WorkManager for periodic orbital (TLE) updates.
 - **Networking**: Retrofit 2 / Gson.
+- **Auto-Updates 🔄**: Integrated GitHub release monitoring for seamless app updates.
 - **APIs**: Open-Meteo, NOAA (SWPC), GFZ Potsdam.
+
+## Update System
+
+DroneWeather includes a built-in update mechanism that checks for new releases on GitHub. 
+
+- **How it works**: The app compares its local `versionCode` with the tag associated with the latest release on GitHub. 
+- **User Permission**: For security, Android requires the user to grant permission to "Install Unknown Apps" for DroneWeather. If not granted, the app will automatically redirect you to the system settings during the first update attempt.
+- **Reliability**: Downloads are performed via `externalCacheDir` to ensure compatibility with the Android Package Installer.
 
 ---
 
@@ -65,8 +74,17 @@ Là où la plupart des applications fournissent des estimations simplistes, Dron
 
 - **Interface** : Jetpack Compose (Material 3).
 - **Calculs Satellites** : Orekit.
+- **Mises à jour Auto 🔄** : Système intégré de détection et d'installation des nouvelles versions via GitHub.
 - **Tâches de fond** : WorkManager pour les mises à jour orbitales (TLE).
 - **Sources de données** : Open-Meteo, NOAA (SWPC), GFZ Potsdam.
+
+## Système de Mise à Jour
+
+DroneWeather intègre son propre système de mise à jour pour vous garantir de toujours voler avec les derniers algorithmes de sécurité.
+
+- **Fonctionnement** : L'application compare son `versionCode` local avec le dernier tag publié sur GitHub. Si une version supérieure est disponible, un badge apparaît dans l'onglet Aide.
+- **Sécurité** : Pour installer une mise à jour, Android vous demandera l'autorisation d'installer des "applications de sources inconnues". DroneWeather vous redirigera automatiquement vers les paramètres système si nécessaire.
+- **Signature** : Notez que si vous installez une version via Android Studio (version de debug), elle ne pourra pas être mise à jour par une version téléchargée sur GitHub (version de release) sans une désinstallation préalable, à cause des règles de sécurité de signature d'Android.
 
 ## License / Licence
 
