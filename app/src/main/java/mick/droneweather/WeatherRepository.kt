@@ -104,11 +104,11 @@ class WeatherRepository(
         val cached = weatherDao.getCachedData()
         val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
 
-        // Check if coordinates have changed significantly (more than 1km approx)
+        // Check if coordinates have changed significantly (more than 100m approx)
         val locationChanged = if (lat != null && lon != null && cached != null) {
             val dist = FloatArray(1)
             android.location.Location.distanceBetween(lat, lon, cached.latitude, cached.longitude, dist)
-            dist[0] > 1000 // 1km threshold
+            dist[0] > 100 // 100m threshold
         } else false
 
         if (!force && !isExpired && !locationChanged) {
