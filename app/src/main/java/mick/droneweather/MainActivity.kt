@@ -1760,7 +1760,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 // --- Expandable Sections ---
 
                 // Température
-                SettingsExpandableRow(stringResource(R.string.settings_temp_label), expandedSection == "temp") { expandedSection = if (expandedSection == "temp") null else "temp" }
+                SettingsExpandableRow(stringResource(R.string.settings_temp_label), Icons.Default.Thermostat, expandedSection == "temp") { expandedSection = if (expandedSection == "temp") null else "temp" }
                 if (expandedSection == "temp") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.settings_temp_range, uiState.tempMinThreshold, uiState.tempMaxThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
@@ -1774,7 +1774,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Vitesse du vent
-                SettingsExpandableRow(stringResource(R.string.settings_wind_label), expandedSection == "wind") { expandedSection = if (expandedSection == "wind") null else "wind" }
+                SettingsExpandableRow(stringResource(R.string.settings_wind_label), Icons.Default.Air, expandedSection == "wind") { expandedSection = if (expandedSection == "wind") null else "wind" }
                 if (expandedSection == "wind") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.settings_wind_max, uiState.windMaxThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
@@ -1788,7 +1788,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Altitude
-                SettingsExpandableRow(stringResource(R.string.settings_altitude_label), expandedSection == "alt") { expandedSection = if (expandedSection == "alt") null else "alt" }
+                SettingsExpandableRow(stringResource(R.string.settings_altitude_label), Icons.Default.Layers, expandedSection == "alt") { expandedSection = if (expandedSection == "alt") null else "alt" }
                 if (expandedSection == "alt") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1807,7 +1807,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Visibilité
-                SettingsExpandableRow(stringResource(R.string.settings_visibility_label), expandedSection == "vis") { expandedSection = if (expandedSection == "vis") null else "vis" }
+                SettingsExpandableRow(stringResource(R.string.settings_visibility_label), Icons.Default.Visibility, expandedSection == "vis") { expandedSection = if (expandedSection == "vis") null else "vis" }
                 if (expandedSection == "vis") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.settings_visibility_min, uiState.visibilityMinThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
@@ -1821,7 +1821,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Précipitations
-                SettingsExpandableRow(stringResource(R.string.settings_precip_label), expandedSection == "precip") { expandedSection = if (expandedSection == "precip") null else "precip" }
+                SettingsExpandableRow(stringResource(R.string.settings_precip_label), Icons.Default.WaterDrop, expandedSection == "precip") { expandedSection = if (expandedSection == "precip") null else "precip" }
                 if (expandedSection == "precip") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.settings_precip_max, uiState.precipMaxThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
@@ -1835,7 +1835,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Météo
-                SettingsExpandableRow(stringResource(R.string.settings_weather_label), expandedSection == "meteo") { expandedSection = if (expandedSection == "meteo") null else "meteo" }
+                SettingsExpandableRow(stringResource(R.string.settings_weather_label), Icons.Default.Cloud, expandedSection == "meteo") { expandedSection = if (expandedSection == "meteo") null else "meteo" }
                 if (expandedSection == "meteo") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SettingsSwitchRow(stringResource(R.string.settings_alert_rain), uiState.alertRain) { viewModel.updateSettings(alertRain = it) }
@@ -1844,7 +1844,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Satellites
-                SettingsExpandableRow(stringResource(R.string.settings_gnss_constellations), expandedSection == "gnss") { expandedSection = if (expandedSection == "gnss") null else "gnss" }
+                SettingsExpandableRow(stringResource(R.string.settings_gnss_constellations), Icons.Default.SatelliteAlt, expandedSection == "gnss") { expandedSection = if (expandedSection == "gnss") null else "gnss" }
                 if (expandedSection == "gnss") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SettingsSwitchRow(stringResource(R.string.gnss_gps), uiState.useGps) { viewModel.updateSettings(useGps = it) }
@@ -1855,7 +1855,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Affichage des Données
-                SettingsExpandableRow(stringResource(R.string.settings_ui_label), expandedSection == "ui") { expandedSection = if (expandedSection == "ui") null else "ui" }
+                SettingsExpandableRow(stringResource(R.string.settings_ui_label), Icons.Default.Palette, expandedSection == "ui") { expandedSection = if (expandedSection == "ui") null else "ui" }
                 if (expandedSection == "ui") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SettingsSwitchRow(stringResource(R.string.settings_dark_theme), uiState.darkTheme) { viewModel.updateSettings(darkTheme = it) }
@@ -1864,7 +1864,7 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 }
 
                 // Notifications
-                SettingsExpandableRow(stringResource(R.string.settings_notifications_label), expandedSection == "notif") { expandedSection = if (expandedSection == "notif") null else "notif" }
+                SettingsExpandableRow(stringResource(R.string.settings_notifications_label), Icons.Default.Notifications, expandedSection == "notif") { expandedSection = if (expandedSection == "notif") null else "notif" }
                 if (expandedSection == "notif") {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SettingsSwitchRow(stringResource(R.string.settings_alert_weather), uiState.alertWeather) { viewModel.updateSettings(alertWeather = it) }
@@ -1913,9 +1913,25 @@ fun UnitChip(name: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun SettingsExpandableRow(title: String, isExpanded: Boolean, onClick: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.bodyLarge)
+fun SettingsExpandableRow(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, isExpanded: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color(0xFF00B0FF),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(title, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.bodyLarge)
+        }
         Icon(imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, tint = Color.Gray)
     }
 }
