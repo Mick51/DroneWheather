@@ -1079,7 +1079,12 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
         // Vérification des mises à jour au démarrage
         val currentVersionCode = try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) pInfo.longVersionCode else pInfo.versionCode.toLong()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                pInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                pInfo.versionCode.toLong()
+            }
         } catch (_: Exception) { 5L }
         viewModel.checkForUpdates(context, currentVersionCode = currentVersionCode)
 
@@ -1825,7 +1830,12 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                     onClick = { 
                     val currentVersionCode = try {
                         val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) pInfo.longVersionCode else pInfo.versionCode.toLong()
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            pInfo.longVersionCode
+                        } else {
+                            @Suppress("DEPRECATION")
+                            pInfo.versionCode.toLong()
+                        }
                     } catch (_: Exception) { 5L }
                     viewModel.checkForUpdates(context, manual = true, currentVersionCode = currentVersionCode) 
                 },
