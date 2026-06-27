@@ -56,12 +56,12 @@ fun SatelliteForecastChart(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .background(CardBackground, RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
         Text(
             stringResource(R.string.chart_sat_title),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold
         )
@@ -133,11 +133,11 @@ fun SatelliteForecastChart(
         ) {
             Box(Modifier.size(8.dp).background(Color(0xFF4CAF50)))
             Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.chart_sat_locked), color = Color.White, fontSize = 10.sp)
+            Text(stringResource(R.string.chart_sat_locked), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
             Spacer(Modifier.width(16.dp))
             Box(Modifier.size(8.dp).background(Color(0xFF00B0FF).copy(alpha = 0.4f)))
             Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.chart_sat_visible), color = Color.White, fontSize = 10.sp)
+            Text(stringResource(R.string.chart_sat_visible), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
         }
     }
 }

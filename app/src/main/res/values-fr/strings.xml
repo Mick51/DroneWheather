@@ -68,7 +68,7 @@
     <string name="desc_wind">Vitesse du vent mesurée à 10m de hauteur. Des vents forts peuvent affecter la stabilité du drone et l\'autonomie de la batterie. Seuil : > 25 km/h est dangereux.</string>
     <string name="desc_gusts">Rafales de vent soudaines. Les rafales sont souvent plus dangereuses que le vent constant pour le vol de drone. Seuil : > 35 km/h est dangereux.</string>
     <string name="desc_wind_dir">Direction d\'où vient le vent. Important pour les stratégies de décollage et d\'atterrissage.</string>
-    <string name="desc_precip">Probabilité de pluie ou de neige. La plupart des drones grand public ne sont pas étanches. Seuil : > 10% est risqué.</string>
+    <string name="desc_precip">Probabilité de pluie ou de neige. La plupart des drones grand public ne sont pas étanches.</string>
     <string name="desc_clouds">Pourcentage du ciel couvert par les nuages. Affecte la visibilité et la luminosité pour le tournage.</string>
     <string name="desc_visibility">Distance horizontale à laquelle les objets peuvent être vus clairement. Critique pour les vols en vue directe (VLOS).</string>
     <string name="desc_kp">Indice représentant l\'activité géomagnétique. Un indice Kp élevé (> 4) peut causer des interférences GPS et des pertes de contrôle.</string>
@@ -126,4 +126,6 @@
     <string name="chart_sat_title">Prévisions Satellites (24h)</string>
     <string name="chart_sat_locked">Verrouillés</string>
     <string name="chart_sat_visible">Visibles</string>
+    <string name="settings_precip_label">Précipitations</string>
+    <string name="settings_precip_max">Probabilité max autorisée : %1$d%%</string>
 </resources>

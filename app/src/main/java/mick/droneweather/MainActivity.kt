@@ -118,7 +118,8 @@ class MainActivity : AppCompatActivity() {
         scheduleWorkers()
 
         setContent {
-            DroneWeatherTheme {
+            val uiState by viewModel.uiState.collectAsState()
+            DroneWeatherTheme(darkTheme = uiState.darkTheme) {
                 SkyGoDashboard(viewModel)
             }
         }
@@ -353,7 +354,7 @@ fun InteractiveForecastSelector(
     val animatedProgress by animateFloatAsState(
         targetValue = if (isDragging) sliderValue / (dayHours.size - 1).coerceAtLeast(1) 
                      else hourIndexInDay.toFloat() / (dayHours.size - 1).coerceAtLeast(1),
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = if (uiState.smoothAnim) spring(stiffness = Spring.StiffnessLow) else snap(),
         label = "SliderAnimation"
     )
 
@@ -371,7 +372,7 @@ fun InteractiveForecastSelector(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = if (dayHours[hourIndexInDay].isNow) stringResource(R.string.label_now_short) else dayHours[hourIndexInDay].time,
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -444,10 +445,19 @@ fun InteractiveForecastSelector(
 
             val barBrush = remember(dayHours) {
                 if (dayHours.size > 1) {
-                    val samples = listOf(0, 4, 8, 12, 16, 20, dayHours.size - 1)
-                    val sampledColors = samples.map { i -> 
-                        dayHours[i.coerceIn(dayHours.indices)].safetyColor 
+                    // Augmentation de l'échantillonnage pour capturer toutes les alertes (vent, pluie, Kp)
+                    // On prend un point toutes les 3 heures environ pour couvrir toute la journée
+                    val step = (dayHours.size / 8).coerceAtLeast(1)
+                    val sampledColors = (0 until dayHours.size step step).map { i ->
+                        dayHours[i].safetyColor
+                    }.toMutableList()
+                    
+                    // S'assurer que le dernier point est inclus
+                    if ((dayHours.size - 1) % step != 0) {
+                        sampledColors.add(dayHours.last().safetyColor)
                     }
+                    
+                    if (sampledColors.size < 2) sampledColors.add(sampledColors.first())
                     Brush.horizontalGradient(sampledColors)
                 } else {
                     Brush.horizontalGradient(listOf(GreenSafe, GreenSafe))
@@ -533,7 +543,7 @@ fun InteractiveForecastSelector(
                             },
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, Color.White) else null
+                        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.onBackground) else null
                     ) {
                         Box(
                             modifier = Modifier
@@ -618,11 +628,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                         
                         altitudes.forEach { (alt, speed) ->
                             val speedVal = speed.toIntOrNull() ?: 0
-                            val color = when {
-                                speedVal >= 25 -> RedDanger
-                                speedVal >= 15 -> YellowWarn
-                                else -> GreenSafe
-                            }
+                            val color = viewModel.getCardColor("Vent", speed, uiState)
                             
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
@@ -677,9 +683,9 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 }
             },
             shape = RoundedCornerShape(16.dp),
-            containerColor = Color(0xFF1E2330),
-            titleContentColor = Color.White,
-            textContentColor = Color.LightGray
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
     }
 
@@ -712,7 +718,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     Column {
                         Text(
                             text = uiState.cityNameState.ifEmpty { stringResource(R.string.location_loading) },
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             style = if (isLandscape) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -727,15 +733,15 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 }
                 Row {
                     IconButton(onClick = { showSearchDialog = true }, modifier = Modifier.size(36.dp)) {
-                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_content_description), tint = Color.White, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_content_description), tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(24.dp))
                     }
                     IconButton(onClick = {
                         viewModel.updateLocationAndData(context, force = true)
                     }, modifier = Modifier.size(36.dp)) {
                         if (uiState.isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onBackground, strokeWidth = 2.dp)
                         } else {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh_content_description), tint = Color.White, modifier = Modifier.size(24.dp))
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh_content_description), tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(24.dp))
                         }
                     }
                 }
@@ -747,17 +753,17 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         shape = RoundedCornerShape(16.dp),
-                        color = AppBackground,
+                        color = MaterialTheme.colorScheme.background,
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(stringResource(R.string.search_dialog_title), color = Color.White, style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.search_dialog_title), color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = { Text(stringResource(R.string.search_placeholder), color = Color.Gray) },
-                                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White),
+                                textStyle = androidx.compose.ui.text.TextStyle(color = MaterialTheme.colorScheme.onSurface),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 keyboardActions = KeyboardActions(onSearch = {
@@ -768,7 +774,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                                 }),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = NeonGreen,
-                                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                                     cursorColor = NeonGreen
                                 )
                             )
@@ -1004,7 +1010,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
     }
 
     Scaffold(
-        containerColor = AppBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Surface(modifier = Modifier.fillMaxWidth().navigationBarsPadding(), color = Color(0xFF12151C), border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f))) {
                 Row(modifier = Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
@@ -1065,7 +1071,7 @@ fun ToolScreen(viewModel: WeatherViewModel) {
                 Text(
                     text = stringResource(R.string.tab_tools),
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
@@ -1089,11 +1095,11 @@ fun ToolScreen(viewModel: WeatherViewModel) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = stringResource(resId),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
-                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
             }
         }
 
@@ -1102,7 +1108,7 @@ fun ToolScreen(viewModel: WeatherViewModel) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppBackground)
+                    .background(MaterialTheme.colorScheme.background)
                     .clickable(enabled = false) {} // Intercept clicks
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -1126,7 +1132,7 @@ fun ToolScreen(viewModel: WeatherViewModel) {
                         Text(
                             text = stringResource(menuItems.find { it.second == tool }?.first ?: R.string.tab_tools),
                             style = if (isLandscape) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
@@ -1171,7 +1177,7 @@ fun SatelliteStatsScreen(uiState: WeatherUiState) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2330)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -1246,7 +1252,7 @@ fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         Column(modifier = Modifier.weight(1.2f), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = hour.time,
-                                color = if (hour.isNow) Color(0xFF00B0FF) else Color.White,
+                                color = if (hour.isNow) Color(0xFF00B0FF) else MaterialTheme.colorScheme.onBackground,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (hour.isNow) FontWeight.Bold else FontWeight.Normal
                             )
@@ -1377,7 +1383,7 @@ fun ChecklistScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(checked = item.isChecked, onCheckedChange = { viewModel.toggleChecklistItem(item.id) }, colors = CheckboxDefaults.colors(checkedColor = NeonGreen))
-                    Text(text = item.text, color = if (item.isChecked) Color.Gray else Color.White, modifier = Modifier.padding(start = 8.dp).weight(1f))
+                    Text(text = item.text, color = if (item.isChecked) Color.Gray else MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(start = 8.dp).weight(1f))
                     IconButton(onClick = { viewModel.removeChecklistItem(item.id) }) { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red.copy(alpha = 0.6f)) }
                 }
             }
@@ -1386,7 +1392,7 @@ fun ChecklistScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
             OutlinedTextField(
                 value = newItemText, onValueChange = { newItemText = it }, modifier = Modifier.weight(1f),
                 placeholder = { Text(stringResource(R.string.add_item_placeholder), color = Color.Gray) },
-                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White),
+                textStyle = androidx.compose.ui.text.TextStyle(color = MaterialTheme.colorScheme.onSurface),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonGreen, unfocusedBorderColor = Color.Gray)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -1628,7 +1634,7 @@ fun HelpScreen() {
         Text(
             text = stringResource(R.string.tab_help),
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold
         )
         Text(
@@ -1647,7 +1653,7 @@ fun HelpScreen() {
         
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2330)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(
@@ -1656,14 +1662,14 @@ fun HelpScreen() {
             ) {
                 Text(
                     text = "Support & Contact",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.labelMedium,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "Mick",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -1692,11 +1698,11 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var expandedSection by remember { mutableStateOf<String?>(null) }
     
-    Column(modifier = Modifier.fillMaxSize().background(AppBackground).padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(16.dp)) {
         Text(
             text = stringResource(R.string.tab_settings),
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 24.dp)
         )
@@ -1711,18 +1717,18 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     "pl" -> stringResource(R.string.lang_pl)
                     else -> stringResource(R.string.lang_fr)
                 }, langExpanded) { langExpanded = !langExpanded }
-                DropdownMenu(expanded = langExpanded, onDismissRequest = { langExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_fr), color = Color.White) }, onClick = { viewModel.updateSettings(language = "fr"); langExpanded = false })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_en), color = Color.White) }, onClick = { viewModel.updateSettings(language = "en"); langExpanded = false })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_pl), color = Color.White) }, onClick = { viewModel.updateSettings(language = "pl"); langExpanded = false })
+                DropdownMenu(expanded = langExpanded, onDismissRequest = { langExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_fr), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(language = "fr"); langExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_en), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(language = "en"); langExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.lang_pl), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(language = "pl"); langExpanded = false })
                 }
 
                 // 2. Time Format
                 var timeExpanded by remember { mutableStateOf(false) }
                 SettingsSelectorRow(stringResource(R.string.settings_time_format), if(uiState.timeFormat24h) stringResource(R.string.settings_time_24h) else stringResource(R.string.settings_time_12h), timeExpanded) { timeExpanded = !timeExpanded }
-                DropdownMenu(expanded = timeExpanded, onDismissRequest = { timeExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_time_24h), color = Color.White) }, onClick = { viewModel.updateSettings(timeFormat24h = true); timeExpanded = false })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_time_12h), color = Color.White) }, onClick = { viewModel.updateSettings(timeFormat24h = false); timeExpanded = false })
+                DropdownMenu(expanded = timeExpanded, onDismissRequest = { timeExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_time_24h), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(timeFormat24h = true); timeExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_time_12h), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(timeFormat24h = false); timeExpanded = false })
                 }
 
                 // 3. Drone
@@ -1733,11 +1739,11 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     DroneType.DJI_MAVIC -> stringResource(R.string.settings_drone_mavic)
                     else -> stringResource(R.string.settings_drone_custom)
                 }, droneExpanded) { droneExpanded = !droneExpanded }
-                DropdownMenu(expanded = droneExpanded, onDismissRequest = { droneExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_mini), color = Color.White) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_MINI); droneExpanded = false })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_air), color = Color.White) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_AIR); droneExpanded = false })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_mavic), color = Color.White) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_MAVIC); droneExpanded = false })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_custom), color = Color.White) }, onClick = { viewModel.updateSettings(droneType = DroneType.CUSTOM); droneExpanded = false })
+                DropdownMenu(expanded = droneExpanded, onDismissRequest = { droneExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_mini), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_MINI); droneExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_air), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_AIR); droneExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_mavic), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(droneType = DroneType.DJI_MAVIC); droneExpanded = false })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.settings_drone_custom), color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSettings(droneType = DroneType.CUSTOM); droneExpanded = false })
                 }
 
                 // 4. Source
@@ -1747,9 +1753,9 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     WeatherSource.APPLE_WEATHER -> "Apple Weather"
                     else -> "WeatherAPI"
                 }, sourceExpanded) { sourceExpanded = !sourceExpanded }
-                DropdownMenu(expanded = sourceExpanded, onDismissRequest = { sourceExpanded = false }, modifier = Modifier.background(Color(0xFF1E2330))) {
-                    DropdownMenuItem(text = { Text("Open-Meteo", color = Color.White) }, onClick = { viewModel.updateSource(WeatherSource.OPEN_METEO); sourceExpanded = false })
-                    DropdownMenuItem(text = { Text("Apple Weather", color = Color.White) }, onClick = { viewModel.updateSource(WeatherSource.APPLE_WEATHER); sourceExpanded = false })
+                DropdownMenu(expanded = sourceExpanded, onDismissRequest = { sourceExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                    DropdownMenuItem(text = { Text("Open-Meteo", color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSource(WeatherSource.OPEN_METEO); sourceExpanded = false })
+                    DropdownMenuItem(text = { Text("Apple Weather", color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSource(WeatherSource.APPLE_WEATHER); sourceExpanded = false })
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1817,6 +1823,20 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                     }
                 }
 
+                // Précipitations
+                SettingsExpandableRow(stringResource(R.string.settings_precip_label), expandedSection == "precip") { expandedSection = if (expandedSection == "precip") null else "precip" }
+                if (expandedSection == "precip") {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.settings_precip_max, uiState.precipMaxThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        Slider(
+                            value = uiState.precipMaxThreshold.toFloat(),
+                            onValueChange = { viewModel.updateSettings(precipMax = it.roundToInt()) },
+                            valueRange = 0f..100f,
+                            colors = SliderDefaults.colors(thumbColor = NeonGreen, activeTrackColor = NeonGreen)
+                        )
+                    }
+                }
+
                 // Météo
                 SettingsExpandableRow(stringResource(R.string.settings_weather_label), expandedSection == "meteo") { expandedSection = if (expandedSection == "meteo") null else "meteo" }
                 if (expandedSection == "meteo") {
@@ -1869,7 +1889,7 @@ fun SettingsSelectorRow(label: String, value: String, isExpanded: Boolean, onCli
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = Color.White, style = MaterialTheme.typography.bodyLarge)
+        Text(label, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.bodyLarge)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(value, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
             Icon(
@@ -1898,7 +1918,7 @@ fun UnitChip(name: String, isSelected: Boolean, onClick: () -> Unit) {
 @Composable
 fun SettingsExpandableRow(title: String, isExpanded: Boolean, onClick: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = Color.White, style = MaterialTheme.typography.bodyLarge)
+        Text(title, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.bodyLarge)
         Icon(imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, tint = Color.Gray)
     }
 }

@@ -68,7 +68,7 @@
     <string name="desc_wind">Wind speed measured at 10m height. High winds can affect drone stability and battery life. Threshold: > 25 km/h is dangerous.</string>
     <string name="desc_gusts">Sudden bursts of wind. Gusts are often more dangerous than constant wind for drone flight. Threshold: > 35 km/h is dangerous.</string>
     <string name="desc_wind_dir">Direction the wind is coming from. Important for takeoff and landing strategies.</string>
-    <string name="desc_precip">Probability of rain or snow. Most consumer drones are not waterproof. Threshold: > 10% is risky.</string>
+    <string name="desc_precip">Probability of rain or snow. Most consumer drones are not waterproof.</string>
     <string name="desc_clouds">Percentage of the sky covered by clouds. Affects visibility and lighting for filming.</string>
     <string name="desc_visibility">Horizontal distance at which objects can be clearly seen. Critical for VLOS (Visual Line of Sight) flights.</string>
     <string name="desc_kp">Index representing geomagnetic activity. A high Kp index (> 4) can cause GPS interference and "flyaways".</string>
@@ -126,4 +126,6 @@
     <string name="chart_sat_title">Satellite Forecast (24h)</string>
     <string name="chart_sat_locked">Locked</string>
     <string name="chart_sat_visible">Visible</string>
+    <string name="settings_precip_label">Precipitation</string>
+    <string name="settings_precip_max">Max probability allowed: %1$d%%</string>
 </resources>

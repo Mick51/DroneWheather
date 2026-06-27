@@ -147,6 +147,7 @@ data class WeatherUiState(
     val forecastAltitude: Int = 10,
     val visibilityUnit: DistanceUnit = DistanceUnit.KILOMETERS,
     val visibilityMinThreshold: Double = 5.0,
+    val precipMaxThreshold: Int = 60,
     
     val useGps: Boolean = true,
     val useGlonass: Boolean = true,
@@ -201,6 +202,7 @@ class WeatherViewModel(
             altitudeUnit = DistanceUnit.valueOf(settingsManager.getString("altitudeUnit", DistanceUnit.METERS.name)),
             forecastAltitude = settingsManager.getInt("forecastAltitude", 10),
             visibilityMinThreshold = settingsManager.getDouble("visibilityMin", 5.0),
+            precipMaxThreshold = settingsManager.getInt("precipMax", 60),
             useGps = settingsManager.getBoolean("useGps", true),
             useGlonass = settingsManager.getBoolean("useGlonass", true),
             useGalileo = settingsManager.getBoolean("useGalileo", true),
@@ -279,8 +281,8 @@ class WeatherViewModel(
                 else -> GreenSafe
             }
             "Precip" -> when {
-                doubleValue > 40 -> RedDanger
-                doubleValue > 10 -> YellowWarn
+                doubleValue >= state.precipMaxThreshold -> RedDanger
+                doubleValue >= (state.precipMaxThreshold * 0.5f) -> YellowWarn
                 else -> GreenSafe
             }
             "Visibility" -> {
@@ -320,7 +322,7 @@ class WeatherViewModel(
         val currentTemp = temperature.toIntOrNull() ?: 20
         
         // --- DANGER THRESHOLDS (RED) ---
-        val isPrecipDanger = precip >= 10
+        val isPrecipDanger = precip >= state.precipMaxThreshold
         val isWindDanger = currentWind >= state.windMaxThreshold || currentGust >= (state.windMaxThreshold * 1.4f).toInt()
         val isSolarDanger = currentKp >= 5.0 || currentBz <= -10.0
         val isTempDanger = currentTemp > state.tempMaxThreshold || currentTemp < state.tempMinThreshold
@@ -592,6 +594,7 @@ class WeatherViewModel(
         forecastAltitude: Int? = null,
         visibilityUnit: DistanceUnit? = null,
         visibilityMin: Double? = null,
+        precipMax: Int? = null,
         useGps: Boolean? = null,
         useGlonass: Boolean? = null,
         useGalileo: Boolean? = null,
@@ -614,6 +617,7 @@ class WeatherViewModel(
         altitudeUnit?.let { settingsManager.saveString("altitudeUnit", it.name) }
         forecastAltitude?.let { settingsManager.saveInt("forecastAltitude", it) }
         visibilityMin?.let { settingsManager.saveDouble("visibilityMin", it) }
+        precipMax?.let { settingsManager.saveInt("precipMax", it) }
         useGps?.let { settingsManager.saveBoolean("useGps", it) }
         useGlonass?.let { settingsManager.saveBoolean("useGlonass", it) }
         useGalileo?.let { settingsManager.saveBoolean("useGalileo", it) }
@@ -626,7 +630,7 @@ class WeatherViewModel(
         morningForecast?.let { settingsManager.saveBoolean("morningForecast", it) }
 
         _uiState.update { 
-            it.copy(
+            val updatedBase = it.copy(
                 language = language ?: it.language,
                 timeFormat24h = timeFormat24h ?: it.timeFormat24h,
                 droneType = droneType ?: it.droneType,
@@ -637,6 +641,7 @@ class WeatherViewModel(
                 forecastAltitude = forecastAltitude ?: it.forecastAltitude,
                 visibilityUnit = visibilityUnit ?: it.visibilityUnit,
                 visibilityMinThreshold = visibilityMin ?: it.visibilityMinThreshold,
+                precipMaxThreshold = precipMax ?: it.precipMaxThreshold,
                 useGps = useGps ?: it.useGps,
                 useGlonass = useGlonass ?: it.useGlonass,
                 useGalileo = useGalileo ?: it.useGalileo,
@@ -647,23 +652,33 @@ class WeatherViewModel(
                 smoothAnim = smoothAnim ?: it.smoothAnim,
                 alertWeather = alertWeather ?: it.alertWeather,
                 morningForecast = morningForecast ?: it.morningForecast
-            ).let { updatedState ->
-                // Recalculate safety status for the current selected hour with the new thresholds
-                val (safety, resId, color) = calculateSafetyStatus(
-                    updatedState.windSpeed, 
-                    updatedState.windGust, 
-                    updatedState.kpValue, 
-                    updatedState.currentBz, 
-                    updatedState.precip, 
-                    updatedState.temperature,
-                    updatedState // Pass the updated state to use the new thresholds
+            )
+
+            // 1. Re-calculate colors for the entire hourly forecast list
+            val updatedForecast = updatedBase.hourlyForecast.map { hour ->
+                val (_, _, newColor) = calculateSafetyStatus(
+                    hour.wind, hour.gusts, hour.kp.toDoubleOrNull(), updatedBase.currentBz, hour.precip, hour.temp, updatedBase
                 )
-                updatedState.copy(
-                    isSafe = safety,
-                    statusTextResId = resId,
-                    statusColor = color
-                )
+                hour.copy(safetyColor = newColor)
             }
+
+            // 2. Re-calculate overall safety status for the currently selected hour
+            val (safety, resId, color) = calculateSafetyStatus(
+                updatedBase.windSpeed, 
+                updatedBase.windGust, 
+                updatedBase.kpValue, 
+                updatedBase.currentBz, 
+                updatedBase.precip, 
+                updatedBase.temperature,
+                updatedBase
+            )
+
+            updatedBase.copy(
+                hourlyForecast = updatedForecast,
+                isSafe = safety,
+                statusTextResId = resId,
+                statusColor = color
+            )
         }
 
         if (gnssChanged) {

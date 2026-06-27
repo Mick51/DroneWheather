@@ -68,7 +68,7 @@
     <string name="desc_wind">Prędkość wiatru mierzona na wysokości 10m. Silny wiatr może wpływać na stabilność drona i żywotność baterii. Próg: > 25 km/h jest niebezpieczny.</string>
     <string name="desc_gusts">Nagłe uderzenia wiatru. Porywy sont często groźniejsze dla drona niż stały wiatr. Próg: > 35 km/h jest niebezpieczny.</string>
     <string name="desc_wind_dir">Kierunek, z którego wieje wiatr. Ważne przy startach i lądowaniach.</string>
-    <string name="desc_precip">Prawdopodobieństwo deszczu lub śniegu. Większość dronów nie jest wodoodporna. Próg: > 10% jest ryzykowny.</string>
+    <string name="desc_precip">Prawdopodobieństwo deszczu lub śniegu. Większość dronów nie jest wodoodporna.</string>
     <string name="desc_clouds">Procent zachmurzenia nieba. Wpływa na widoczność i oświetlenie do filmowania.</string>
     <string name="desc_visibility">Odległość pozioma, na której obiekty są wyraźnie widoczne. Krytyczne dla lotów w zasięgu wzroku (VLOS).</string>
     <string name="desc_kp">Indeks aktywności geomagnetycznej. Wysoki indeks Kp (> 4) może powodować zakłócenia GPS.</string>
@@ -126,4 +126,6 @@
     <string name="chart_sat_title">Prognoza satelitarna (24h)</string>
     <string name="chart_sat_locked">Zablokowane</string>
     <string name="chart_sat_visible">Widoczne</string>
+    <string name="settings_precip_label">Opady</string>
+    <string name="settings_precip_max">Maks. dopuszczalne opady: %1$d%%</string>
 </resources>
