@@ -94,7 +94,7 @@ object OrekitInitializer {
                             input.copyTo(output)
                         }
                     }
-                } catch (e: Exception) {}
+                } catch (_: Exception) {}
             }
         }
     }
