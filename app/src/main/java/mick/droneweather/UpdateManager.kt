@@ -37,7 +37,7 @@ class UpdateManager(private val context: Context) {
                     if (latestVersionCode > currentVersionCode) {
                         Log.d("UpdateManager", "DEBUG_UPDATE: New version found (Numeric)")
                         return@withContext latest
-                    } else if (latestVersionCode <= currentVersionCode) {
+                    } else {
                         Log.d("UpdateManager", "DEBUG_UPDATE: Already up to date (Numeric)")
                         return@withContext null
                     }
