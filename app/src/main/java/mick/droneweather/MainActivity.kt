@@ -939,7 +939,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
             title = { Text(stringResource(R.string.update_title), fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text(stringResource(R.string.update_message, uiState.updateAvailable!!.tagName))
+                    Text(stringResource(R.string.update_message))
                     if (uiState.isDownloadingUpdate) {
                         Spacer(modifier = Modifier.height(16.dp))
                         LinearProgressIndicator(

@@ -17,6 +17,7 @@
 package mick.droneweather
 
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.Query
 import com.google.gson.annotations.SerializedName
 
@@ -168,6 +169,7 @@ interface GfzApiService {
 }
 
 interface GitHubApiService {
+    @Headers("User-Agent: DroneWeather-App")
     @GET("repos/Mick51/DroneWheather/releases/latest")
     suspend fun getLatestRelease(): GitHubRelease
 }

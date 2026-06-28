@@ -23,18 +23,37 @@ class UpdateManager(private val context: Context) {
             try {
                 val latest = RetrofitInstance.githubApi.getLatestRelease()
                 
-                // Extract version code from tag (e.g., "v5" -> 5)
-                val tagDigits = latest.tagName.replace(Regex("[^0-9]"), "")
-                val latestVersionCode = tagDigits.toLongOrNull() ?: 0L
+                // 1. Try to extract version code from tag
+                // If tag is "v1.5", we want "1.5". If it's "v6", we want "6"
+                val tagClean = latest.tagName.lowercase().removePrefix("v").trim()
                 
-                Log.d("UpdateManager", "DEBUG_UPDATE: Local=$currentVersionCode, GitHub=$latestVersionCode (Tag=${latest.tagName})")
+                // Try direct numeric conversion (for tags like "6")
+                val latestVersionCode = tagClean.toLongOrNull() ?: 0L
+                
+                Log.d("UpdateManager", "DEBUG_UPDATE: Local=$currentVersionCode, GitHubTag=$tagClean (ExtractedCode=$latestVersionCode)")
 
-                // STRICT COMPARISON: Only update if GitHub is strictly newer
-                if (latestVersionCode > currentVersionCode) {
-                    Log.d("UpdateManager", "DEBUG_UPDATE: Update available!")
+                // 2. Compare Numerically first (recommended)
+                if (latestVersionCode > 0) {
+                    if (latestVersionCode > currentVersionCode) {
+                        Log.d("UpdateManager", "DEBUG_UPDATE: New version found (Numeric)")
+                        return@withContext latest
+                    } else if (latestVersionCode <= currentVersionCode) {
+                        Log.d("UpdateManager", "DEBUG_UPDATE: Already up to date (Numeric)")
+                        return@withContext null
+                    }
+                }
+
+                // 3. Fallback: Semantic comparison for strings like "1.5" vs local info
+                val currentVersionName = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+                val localClean = currentVersionName.lowercase().replace("beta", "").trim()
+                
+                Log.d("UpdateManager", "DEBUG_UPDATE: Fallback semantic: GitHub=$tagClean, Local=$localClean")
+                
+                if (tagClean != localClean && tagClean > localClean) {
+                    Log.d("UpdateManager", "DEBUG_UPDATE: New version found (Semantic)")
                     latest
                 } else {
-                    Log.d("UpdateManager", "DEBUG_UPDATE: Up to date.")
+                    Log.d("UpdateManager", "DEBUG_UPDATE: Already up to date (Semantic)")
                     null
                 }
             } catch (e: Exception) {
