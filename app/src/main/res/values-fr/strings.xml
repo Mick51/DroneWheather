@@ -129,7 +129,7 @@
     <string name="settings_precip_label">Précipitations</string>
     <string name="settings_precip_max">Probabilité max autorisée : %1$d%%</string>
     <string name="update_title">Mise à jour disponible</string>
-    <string name="update_message">Une nouvelle version (%1$s) est disponible. Voulez-vous la télécharger et l\'installer maintenant ?</string>
+    <string name="update_message">Une nouvelle version est disponible. Voulez-vous la télécharger et l\'installer maintenant ?</string>
     <string name="btn_update">Mettre à jour</string>
     <string name="btn_later">Plus tard</string>
     <string name="check_updates_title">Mise à jour de l\'app</string>

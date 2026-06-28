@@ -129,7 +129,7 @@
     <string name="settings_precip_label">Precipitation</string>
     <string name="settings_precip_max">Max probability allowed: %1$d%%</string>
     <string name="update_title">Update Available</string>
-    <string name="update_message">A new version (%1$s) is available. Would you like to download and install it now?</string>
+    <string name="update_message">A new version is available. Would you like to download and install it now?</string>
     <string name="btn_update">Update Now</string>
     <string name="btn_later">Later</string>
     <string name="check_updates_title">App Update</string>
