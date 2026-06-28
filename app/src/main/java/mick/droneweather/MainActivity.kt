@@ -1701,40 +1701,63 @@ fun SafeZoneMapScreen(uiState: WeatherUiState) {
 fun HelpScreen(viewModel: WeatherViewModel) { 
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val isLandscape = LocalConfiguration.current.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
     
     val currentVersionName = remember {
         try {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         } catch (_: Exception) {
-            "1.4 Beta"
+            "1.5"
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .verticalScroll(rememberScrollState())
+            .padding(if (isLandscape) 12.dp else 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.Help,
-            contentDescription = null,
-            tint = Color(0xFF00B0FF),
-            modifier = Modifier.size(64.dp)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = stringResource(R.string.tab_help),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
-        )
+        if (!isLandscape) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Help,
+                contentDescription = null,
+                tint = Color(0xFF00B0FF),
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = stringResource(R.string.tab_help),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold
+            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Help,
+                    contentDescription = null,
+                    tint = Color(0xFF00B0FF),
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = stringResource(R.string.tab_help),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
         Text(
             text = "DroneWeather v$currentVersionName",
             style = MaterialTheme.typography.labelMedium,
             color = Color.Gray,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = if (isLandscape) 2.dp else 4.dp)
         )
         Text(
             text = "Licence GNU GPL v3",
@@ -1742,7 +1765,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
             color = Color.Gray.copy(alpha = 0.8f),
             modifier = Modifier.padding(top = 2.dp)
         )
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(if (isLandscape) 16.dp else 32.dp))
         
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -1784,7 +1807,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
             }
         }
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(if (isLandscape) 16.dp else 32.dp))
 
         // Update Section
         Card(
