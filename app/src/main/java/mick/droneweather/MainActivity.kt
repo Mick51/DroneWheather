@@ -127,7 +127,7 @@ class MainActivity : AppCompatActivity() {
                         pInfo.versionCode.toLong()
                     }
                 } catch (_: Exception) {
-                    5L
+                    7L
                 }
             }
 
@@ -1085,7 +1085,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
                 @Suppress("DEPRECATION")
                 pInfo.versionCode.toLong()
             }
-        } catch (_: Exception) { 5L }
+        } catch (_: Exception) { 7L }
         viewModel.checkForUpdates(context, currentVersionCode = currentVersionCode)
 
         // Initialiser le format 24h selon les paramètres du système
@@ -1100,8 +1100,8 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
                     NavItem(Icons.Default.SettingsInputAntenna, uiState.currentTab == AppTab.DASHBOARD) { viewModel.setTab(AppTab.DASHBOARD) }
                     NavItem(Icons.Default.Build, uiState.currentTab == AppTab.TOOLS) { viewModel.setTab(AppTab.TOOLS) }
                     NavItem(Icons.Default.Group, uiState.currentTab == AppTab.COMMUNITY) { viewModel.setTab(AppTab.COMMUNITY) }
-                    NavItem(Icons.AutoMirrored.Filled.Help, uiState.currentTab == AppTab.HELP) { viewModel.setTab(AppTab.HELP) }
                     NavItem(Icons.Default.Settings, uiState.currentTab == AppTab.SETTINGS) { viewModel.setTab(AppTab.SETTINGS) }
+                    NavItem(Icons.AutoMirrored.Filled.Help, uiState.currentTab == AppTab.HELP) { viewModel.setTab(AppTab.HELP) }
                 }
             }
         }
@@ -1707,7 +1707,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
         try {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         } catch (_: Exception) {
-            "1.5"
+            "1.6"
         }
     }
 
@@ -1723,9 +1723,9 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                 imageVector = Icons.AutoMirrored.Filled.Help,
                 contentDescription = null,
                 tint = Color(0xFF00B0FF),
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(48.dp)
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = stringResource(R.string.tab_help),
                 style = MaterialTheme.typography.headlineSmall,
@@ -1741,12 +1741,12 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                     imageVector = Icons.AutoMirrored.Filled.Help,
                     contentDescription = null,
                     tint = Color(0xFF00B0FF),
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.tab_help),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold
                 )
@@ -1804,6 +1804,30 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                         context.startActivity(intent)
                     }
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 32.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Contribuer au développement",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, "https://paypal.me/MickaelNaude".toUri())
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF003087)), // PayPal Blue
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.VolunteerActivism, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Donation PayPal", color = Color.White)
+                }
             }
         }
         
@@ -1859,7 +1883,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                             @Suppress("DEPRECATION")
                             pInfo.versionCode.toLong()
                         }
-                    } catch (_: Exception) { 5L }
+                    } catch (_: Exception) { 7L }
                     viewModel.checkForUpdates(context, manual = true, currentVersionCode = currentVersionCode) 
                 },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B0FF)),
