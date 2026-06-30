@@ -464,7 +464,7 @@ fun InteractiveForecastSelector(
                     // Augmentation de l'échantillonnage pour capturer toutes les alertes (vent, pluie, Kp)
                     // On prend un point toutes les 3 heures environ pour couvrir toute la journée
                     val step = (dayHours.size / 8).coerceAtLeast(1)
-                    val sampledColors = (0 until dayHours.size step step).map { i ->
+                    val sampledColors = dayHours.indices.step(step).map { i ->
                         dayHours[i].safetyColor
                     }.toMutableList()
                     
@@ -865,7 +865,6 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                     MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { 
                         detailTitle = context.getString(R.string.metric_temperature)
-                        val formattedTemp = formatTemperature(uiState.temperature, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
                         val formattedDew = formatTemperature(uiState.dewPoint, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
                         detailDesc = context.getString(R.string.desc_temp) + "\n\n" + context.getString(R.string.metric_dew_point) + " : " + formattedDew
                         showDetail = true 
@@ -914,7 +913,6 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), modifier = Modifier.weight(1f), onClick = { 
                         detailTitle = context.getString(R.string.metric_temperature)
-                        val formattedTemp = formatTemperature(uiState.temperature, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
                         val formattedDew = formatTemperature(uiState.dewPoint, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
                         detailDesc = context.getString(R.string.desc_temp) + "\n\n" + context.getString(R.string.metric_dew_point) + " : " + formattedDew
                         showDetail = true 
