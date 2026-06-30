@@ -99,19 +99,22 @@ class WeatherRepository(
         city: String,
         lat: Double? = null,
         lon: Double? = null,
-        force: Boolean = false
+        force: Boolean = false,
+        source: WeatherSource = WeatherSource.OPEN_METEO
     ): WeatherCache = coroutineScope {
         val cached = weatherDao.getCachedData()
         val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
 
-        // Check if coordinates have changed significantly (more than 100m approx)
+        // Check if coordinates or source have changed
         val locationChanged = if (lat != null && lon != null && cached != null) {
             val dist = FloatArray(1)
             android.location.Location.distanceBetween(lat, lon, cached.latitude, cached.longitude, dist)
             dist[0] > 100 // 100m threshold
         } else false
+        
+        val sourceChanged = cached?.weatherSource != source.name
 
-        if (!force && !isExpired && !locationChanged) {
+        if (!force && !isExpired && !locationChanged && !sourceChanged) {
             return@coroutineScope cached
         }
 
@@ -135,12 +138,29 @@ class WeatherRepository(
 
             // 2. Parallel fetching
             val deviceTimeZoneId = Calendar.getInstance().timeZone.id
+            val modelName = if (source == WeatherSource.METEOCIEL) "meteofrance_arome" else null
+            
             val weatherDeferred = async { 
-                weatherApi.getForecast(
-                    lat = targetLat, 
-                    lon = targetLon, 
-                    timezone = deviceTimeZoneId
-                ) 
+                try {
+                    weatherApi.getForecast(
+                        lat = String.format(Locale.US, "%.4f", targetLat).toDouble(), 
+                        lon = String.format(Locale.US, "%.4f", targetLon).toDouble(), 
+                        models = modelName,
+                        timezone = deviceTimeZoneId
+                    )
+                } catch (e: Exception) {
+                    if (modelName != null) {
+                        Log.w("WeatherRepository", "Model $modelName failed, falling back to default")
+                        weatherApi.getForecast(
+                            lat = String.format(Locale.US, "%.4f", targetLat).toDouble(), 
+                            lon = String.format(Locale.US, "%.4f", targetLon).toDouble(),
+                            models = null,
+                            timezone = deviceTimeZoneId
+                        )
+                    } else {
+                        throw e
+                    }
+                }
             }
             val kpDeferred = async {
                 remoteSources.map { source ->
@@ -287,6 +307,7 @@ class WeatherRepository(
                 cityName = resolvedCityName,
                 latitude = targetLat,
                 longitude = targetLon,
+                weatherSource = source.name,
                 lastUpdated = System.currentTimeMillis()
             )
 

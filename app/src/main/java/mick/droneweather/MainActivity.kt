@@ -127,7 +127,7 @@ class MainActivity : AppCompatActivity() {
                         pInfo.versionCode.toLong()
                     }
                 } catch (_: Exception) {
-                    7L
+                    8L
                 }
             }
 
@@ -633,13 +633,16 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                         Text(stringResource(R.string.wind_by_altitude), style = MaterialTheme.typography.labelMedium, color = Color.Gray)
                         Spacer(modifier = Modifier.height(8.dp))
                         
+                        val unit = uiState.altitudeUnit
+                        val label = getAltitudeLabel(unit)
+                        
                         val altitudes = listOf(
                             stringResource(R.string.altitude_ground) to uiState.windSpeed,
-                            "80m" to uiState.wind80m,
-                            "120m" to uiState.wind120m,
-                            "180m" to uiState.wind180m,
-                            "320m" to uiState.wind320m,
-                            "500m" to uiState.wind500m
+                            "${formatAltitude(80, unit)}$label" to uiState.wind80m,
+                            "${formatAltitude(120, unit)}$label" to uiState.wind120m,
+                            "${formatAltitude(180, unit)}$label" to uiState.wind180m,
+                            "${formatAltitude(320, unit)}$label" to uiState.wind320m,
+                            "${formatAltitude(500, unit)}$label" to uiState.wind500m
                         )
                         
                         altitudes.forEach { (alt, speed) ->
@@ -666,7 +669,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("$speed km/h", color = color, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                    Text("${formatWindSpeed(speed, uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", color = color, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
@@ -842,25 +845,25 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     MetricCard(title = stringResource(R.string.metric_weather), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_weather); detailDesc = context.getString(R.string.desc_clouds); showDetail = true }) {
                         AsyncImage(model = "https://openweathermap.org/img/wn/${uiState.weatherIcon ?: "01d"}@2x.png", contentDescription = null, modifier = Modifier.size(28.dp))
                     }
-                    MetricCard(title = stringResource(R.string.metric_wind_air), value = "${uiState.windSpeed} km/h", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_gusts); detailDesc = context.getString(R.string.desc_gusts); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_wind_air), value = "${formatWindSpeed(uiState.windSpeed, uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${formatWindSpeed(uiState.windGust, uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_gusts); detailDesc = context.getString(R.string.desc_gusts); showDetail = true })
                     Card(modifier = Modifier.weight(1f).padding(1.dp).fillMaxSize(), colors = CardDefaults.cardColors(containerColor = GreenSafe), shape = RoundedCornerShape(8.dp), onClick = { detailTitle = context.getString(R.string.metric_wind_dir); detailDesc = context.getString(R.string.desc_wind_dir); showDetail = true }) {
                         Column(modifier = Modifier.fillMaxSize().padding(2.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = stringResource(R.string.metric_wind_dir), style = MaterialTheme.typography.labelSmall, color = Color.Black.copy(alpha = 0.6f), maxLines = 1)
                             WindDirectionIndicator(degrees = uiState.windDeg, size = 18.dp)
-                            Text(text = getCardinalDirection(uiState.windDeg), style = MaterialTheme.typography.labelSmall, color = Color.Black, maxLines = 1)
+                            Text(text = "${getCardinalDirection(uiState.windDeg)} ${uiState.windDeg}\u00B0", style = MaterialTheme.typography.labelSmall, color = Color.Black, maxLines = 1)
                         }
                     }
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     MetricCard(title = stringResource(R.string.metric_precip), value = "${uiState.precip}%", backgroundColor = viewModel.getCardColor("Precip", uiState.precip, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_precip); detailDesc = context.getString(R.string.desc_precip); showDetail = true })
                     MetricCard(title = stringResource(R.string.metric_clouds), value = "${uiState.clouds}%", backgroundColor = viewModel.getCardColor("Cloud", uiState.clouds, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_clouds); detailDesc = context.getString(R.string.desc_clouds); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_visibility), value = "${uiState.visibility} km", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_visibility), value = "${formatVisibility(uiState.visibility, uiState.visibilityUnit)} ${getVisibilityLabel(uiState.visibilityUnit)}", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
                     MetricCard(title = stringResource(R.string.metric_kp_live), value = uiState.kpValue?.let { String.format(Locale.US, "%.1f", it) } ?: "N/A", backgroundColor = viewModel.getCardColor("Kp", uiState.kpValue, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_kp_live); detailDesc = context.getString(R.string.desc_kp); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(
                         title = stringResource(R.string.metric_sats_vis), 
                         value = uiState.forecastSats.toString(), 
@@ -883,27 +886,27 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     MetricCard(title = stringResource(R.string.metric_weather), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_weather); detailDesc = context.getString(R.string.desc_clouds); showDetail = true }) {
                         AsyncImage(model = "https://openweathermap.org/img/wn/${uiState.weatherIcon ?: "01d"}@2x.png", contentDescription = null, modifier = Modifier.size(40.dp))
                     }
-                    MetricCard(title = stringResource(R.string.metric_wind_air), value = "${uiState.windSpeed} km/h", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${uiState.windGust} km/h", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_gusts); detailDesc = context.getString(R.string.desc_gusts); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_wind_air), value = "${formatWindSpeed(uiState.windSpeed, uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", backgroundColor = viewModel.getCardColor("Vent", uiState.windSpeed, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_wind_air); detailDesc = context.getString(R.string.desc_wind); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_gusts), value = "${formatWindSpeed(uiState.windGust, uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", backgroundColor = viewModel.getCardColor("Gusts", uiState.windGust, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_gusts); detailDesc = context.getString(R.string.desc_gusts); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     Card(modifier = Modifier.weight(1f).padding(2.dp).fillMaxSize(), colors = CardDefaults.cardColors(containerColor = GreenSafe), shape = RoundedCornerShape(8.dp), onClick = { detailTitle = context.getString(R.string.metric_wind_dir); detailDesc = context.getString(R.string.desc_wind_dir); showDetail = true }) {
                         Column(modifier = Modifier.fillMaxSize().padding(4.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = stringResource(R.string.metric_wind_dir), style = MaterialTheme.typography.labelMedium, color = Color.Black.copy(alpha = 0.6f), maxLines = 1)
                             WindDirectionIndicator(degrees = uiState.windDeg)
-                            Text(text = getCardinalDirection(uiState.windDeg), style = MaterialTheme.typography.labelMedium, color = Color.Black, maxLines = 1)
+                            Text(text = "${getCardinalDirection(uiState.windDeg)} ${uiState.windDeg}\u00B0", style = MaterialTheme.typography.labelMedium, color = Color.Black, maxLines = 1)
                         }
                     }
                     MetricCard(title = stringResource(R.string.metric_precip), value = "${uiState.precip}%", backgroundColor = viewModel.getCardColor("Precip", uiState.precip, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_precip); detailDesc = context.getString(R.string.desc_precip); showDetail = true })
                     MetricCard(title = stringResource(R.string.metric_clouds), value = "${uiState.clouds}%", backgroundColor = viewModel.getCardColor("Cloud", uiState.clouds, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_clouds); detailDesc = context.getString(R.string.desc_clouds); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(title = stringResource(R.string.metric_visibility), value = "${uiState.visibility} km", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_visibility), value = "${formatVisibility(uiState.visibility, uiState.visibilityUnit)} ${getVisibilityLabel(uiState.visibilityUnit)}", backgroundColor = viewModel.getCardColor("Visibility", uiState.visibility, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_visibility); detailDesc = context.getString(R.string.desc_visibility); showDetail = true })
                     MetricCard(title = stringResource(R.string.metric_kp_live), value = uiState.kpValue?.let { String.format(Locale.US, "%.1f", it) } ?: "N/A", backgroundColor = viewModel.getCardColor("Kp", uiState.kpValue, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_kp_live); detailDesc = context.getString(R.string.desc_kp); showDetail = true })
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${uiState.temperature} \u00B0C", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
                     MetricCard(
                         title = stringResource(R.string.metric_sats_vis), 
                         value = uiState.forecastSats.toString(), 
@@ -1085,7 +1088,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
                 @Suppress("DEPRECATION")
                 pInfo.versionCode.toLong()
             }
-        } catch (_: Exception) { 7L }
+        } catch (_: Exception) { 8L }
         viewModel.checkForUpdates(context, currentVersionCode = currentVersionCode)
 
         // Initialiser le format 24h selon les paramètres du système
@@ -1345,9 +1348,9 @@ fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         }
 
                         // Data Cells with Colors
-                        TableCell(text = "${hour.temp}\u00B0", color = viewModel.getCardColor("Temp", hour.temp, uiState), modifier = Modifier.weight(1f))
-                        TableCell(text = hour.wind, color = viewModel.getCardColor("Vent", hour.wind, uiState), modifier = Modifier.weight(1f))
-                        TableCell(text = hour.gusts, color = viewModel.getCardColor("Gusts", hour.gusts, uiState), modifier = Modifier.weight(1f))
+                        TableCell(text = "${formatTemperature(hour.temp, uiState.temperatureUnit)}${getTemperatureLabel(uiState.temperatureUnit)}", color = viewModel.getCardColor("Temp", hour.temp, uiState), modifier = Modifier.weight(1f))
+                        TableCell(text = formatWindSpeed(hour.wind, uiState.windUnit), color = viewModel.getCardColor("Vent", hour.wind, uiState), modifier = Modifier.weight(1f))
+                        TableCell(text = formatWindSpeed(hour.gusts, uiState.windUnit), color = viewModel.getCardColor("Gusts", hour.gusts, uiState), modifier = Modifier.weight(1f))
                         TableCell(text = hour.kp, color = viewModel.getCardColor("Kp", hour.kp.toDoubleOrNull(), uiState), modifier = Modifier.weight(1f))
                         TableCell(text = "${hour.precip}%", color = viewModel.getCardColor("Precip", hour.precip, uiState), modifier = Modifier.weight(1f))
                     }
@@ -1380,16 +1383,19 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == AndroidConfig.ORIENTATION_LANDSCAPE
     
+    val unit = uiState.altitudeUnit
+    val label = getAltitudeLabel(unit)
+    
     val altitudes = listOf(
         stringResource(R.string.altitude_ground) to uiState.windSpeed,
-        "80m" to uiState.wind80m,
-        "120m" to uiState.wind120m,
-        "180m" to uiState.wind180m,
-        "320m" to uiState.wind320m,
-        "500m" to uiState.wind500m,
-        "800m" to uiState.wind800m,
-        "1000m" to uiState.wind1000m,
-        "1500m" to uiState.wind1500m
+        "${formatAltitude(80, unit)}$label" to uiState.wind80m,
+        "${formatAltitude(120, unit)}$label" to uiState.wind120m,
+        "${formatAltitude(180, unit)}$label" to uiState.wind180m,
+        "${formatAltitude(320, unit)}$label" to uiState.wind320m,
+        "${formatAltitude(500, unit)}$label" to uiState.wind500m,
+        "${formatAltitude(800, unit)}$label" to uiState.wind800m,
+        "${formatAltitude(1000, unit)}$label" to uiState.wind1000m,
+        "${formatAltitude(1500, unit)}$label" to uiState.wind1500m
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = if (isLandscape) 8.dp else 0.dp)) {
@@ -1426,15 +1432,15 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                     ) {
                         val textStyle = if (isLandscape) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium
                         Text(alt, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
-                        Text("$speed km/h", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
-                        Text("${(speedInt * 1.3).toInt()} km/h", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
+                        Text("${formatWindSpeed(speed, uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
+                        Text("${formatWindSpeed((speedInt * 1.3).toInt().toString(), uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
                         Icon(
-                            Icons.Default.PlayArrow, 
+                            Icons.Default.ArrowUpward,
                             contentDescription = null, 
-                            modifier = Modifier.weight(1f).size(if (isLandscape) 14.dp else 16.dp).rotate(uiState.windDeg.toFloat() - 90f),
+                            modifier = Modifier.weight(1f).size(if (isLandscape) 14.dp else 16.dp).rotate(uiState.windDeg.toFloat()),
                             tint = Color.Black
                         )
-                        Text("${uiState.temperature} \u00B0C", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
+                        Text("${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
                     }
                     HorizontalDivider(color = Color.Black.copy(alpha = 0.1f), thickness = 0.5.dp)
                 }
@@ -1492,8 +1498,8 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
     val windDeg = uiState.windDeg.toFloat() // Direction du vent (0 = vient du Nord)
     
     // L'angle de l'aiguille bleue (vent) par rapport au téléphone
-    // On ajoute 180 car l'icône Navigation pointe vers le haut (0°), 
-    // et on veut montrer d'où vient le vent ou vers où il va.
+    // L'icône Navigation pointe vers le haut (0°), 
+    // On montre d'où vient le vent (Source).
     val relativeWindAngle = windDeg - deviceAzimuth
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1514,7 +1520,7 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = uiState.windSpeed,
+                    text = formatWindSpeed(uiState.windSpeed, uiState.windUnit),
                     color = Color(0xFF00B0FF),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Black
@@ -1527,7 +1533,7 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${uiState.windDeg}\u00B0",
+                        text = "${uiState.windDeg}\u00B0 • ${getWindUnitLabel(uiState.windUnit)}",
                         color = Color.Gray,
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -1705,9 +1711,9 @@ fun HelpScreen(viewModel: WeatherViewModel) {
     
     val currentVersionName = remember {
         try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.7"
         } catch (_: Exception) {
-            "1.6"
+            "1.7"
         }
     }
 
@@ -1754,13 +1760,13 @@ fun HelpScreen(viewModel: WeatherViewModel) {
         }
 
         Text(
-            text = "DroneWeather v$currentVersionName",
+            text = stringResource(R.string.help_app_version, currentVersionName),
             style = MaterialTheme.typography.labelMedium,
             color = Color.Gray,
             modifier = Modifier.padding(top = if (isLandscape) 2.dp else 4.dp)
         )
         Text(
-            text = "Licence GNU GPL v3",
+            text = stringResource(R.string.help_license),
             style = MaterialTheme.typography.labelSmall,
             color = Color.Gray.copy(alpha = 0.8f),
             modifier = Modifier.padding(top = 2.dp)
@@ -1777,7 +1783,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Support & Contact",
+                    text = stringResource(R.string.help_support_contact),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.labelMedium,
                     textAlign = TextAlign.Center
@@ -1806,11 +1812,37 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.help_report_issue),
+                    color = Color(0xFF00B0FF),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/Mick51/DroneWheather/issues".toUri())
+                        context.startActivity(intent)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.help_feature_request),
+                    color = Color(0xFF00B0FF),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/Mick51/DroneWheather/pulls".toUri())
+                        context.startActivity(intent)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 32.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Contribuer au développement",
+                    text = stringResource(R.string.help_contribute_title),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.labelMedium,
                     textAlign = TextAlign.Center
@@ -1826,8 +1858,41 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                 ) {
                     Icon(Icons.Default.VolunteerActivism, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Donation PayPal", color = Color.White)
+                    Text(stringResource(R.string.btn_paypal_donation), color = Color.White)
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 32.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.help_data_sources),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.help_open_meteo_credit),
+                    color = Color(0xFF00B0FF),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/open-meteo/open-meteo".toUri())
+                        context.startActivity(intent)
+                    }
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Météociel API (Python Wrapper)",
+                    color = Color(0xFF00B0FF),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/Meteo-API/meteociel_api".toUri())
+                        context.startActivity(intent)
+                    }
+                )
             }
         }
         
@@ -1883,7 +1948,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                             @Suppress("DEPRECATION")
                             pInfo.versionCode.toLong()
                         }
-                    } catch (_: Exception) { 7L }
+                    } catch (_: Exception) { 8L }
                     viewModel.checkForUpdates(context, manual = true, currentVersionCode = currentVersionCode) 
                 },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B0FF)),
@@ -1955,12 +2020,11 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 var sourceExpanded by remember { mutableStateOf(false) }
                 SettingsSelectorRow(stringResource(R.string.settings_source_label), when(uiState.selectedSource) {
                     WeatherSource.OPEN_METEO -> "Open-Meteo"
-                    WeatherSource.APPLE_WEATHER -> "Apple Weather"
-                    else -> "WeatherAPI"
+                    WeatherSource.METEOCIEL -> "Météociel (AROME)"
                 }, sourceExpanded) { sourceExpanded = !sourceExpanded }
                 DropdownMenu(expanded = sourceExpanded, onDismissRequest = { sourceExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                     DropdownMenuItem(text = { Text("Open-Meteo", color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSource(WeatherSource.OPEN_METEO); sourceExpanded = false })
-                    DropdownMenuItem(text = { Text("Apple Weather", color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSource(WeatherSource.APPLE_WEATHER); sourceExpanded = false })
+                    DropdownMenuItem(text = { Text("Météociel (AROME)", color = MaterialTheme.colorScheme.onSurface) }, onClick = { viewModel.updateSource(WeatherSource.METEOCIEL); sourceExpanded = false })
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1971,7 +2035,21 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 SettingsExpandableRow(stringResource(R.string.settings_temp_label), Icons.Default.Thermostat, expandedSection == "temp") { expandedSection = if (expandedSection == "temp") null else "temp" }
                 if (expandedSection == "temp") {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.settings_temp_range, uiState.tempMinThreshold, uiState.tempMaxThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            UnitChip(stringResource(R.string.settings_temp_celsius), uiState.temperatureUnit == TemperatureUnit.CELSIUS) { viewModel.updateSettings(temperatureUnit = TemperatureUnit.CELSIUS) }
+                            UnitChip(stringResource(R.string.settings_temp_fahrenheit), uiState.temperatureUnit == TemperatureUnit.FAHRENHEIT) { viewModel.updateSettings(temperatureUnit = TemperatureUnit.FAHRENHEIT) }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.settings_temp_range, 
+                                formatTemperature(uiState.tempMinThreshold.toString(), uiState.temperatureUnit).toInt(),
+                                formatTemperature(uiState.tempMaxThreshold.toString(), uiState.temperatureUnit).toInt(),
+                                getTemperatureLabel(uiState.temperatureUnit)
+                            ), 
+                            color = Color.Gray, 
+                            style = MaterialTheme.typography.labelSmall
+                        )
                         RangeSlider(
                             value = uiState.tempMinThreshold.toFloat()..uiState.tempMaxThreshold.toFloat(),
                             onValueChange = { viewModel.updateSettings(tempMin = it.start.roundToInt(), tempMax = it.endInclusive.roundToInt()) },
@@ -1985,7 +2063,22 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 SettingsExpandableRow(stringResource(R.string.settings_wind_label), Icons.Default.Air, expandedSection == "wind") { expandedSection = if (expandedSection == "wind") null else "wind" }
                 if (expandedSection == "wind") {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.settings_wind_max, uiState.windMaxThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            UnitChip(stringResource(R.string.settings_wind_kmh), uiState.windUnit == WindUnit.KMH) { viewModel.updateSettings(windUnit = WindUnit.KMH) }
+                            UnitChip(stringResource(R.string.settings_wind_knots), uiState.windUnit == WindUnit.KNOTS) { viewModel.updateSettings(windUnit = WindUnit.KNOTS) }
+                            UnitChip(stringResource(R.string.settings_wind_mph), uiState.windUnit == WindUnit.MPH) { viewModel.updateSettings(windUnit = WindUnit.MPH) }
+                            UnitChip(stringResource(R.string.settings_wind_ms), uiState.windUnit == WindUnit.MS) { viewModel.updateSettings(windUnit = WindUnit.MS) }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.settings_wind_max, 
+                                formatWindSpeed(uiState.windMaxThreshold.toString(), uiState.windUnit).toInt(),
+                                getWindUnitLabel(uiState.windUnit)
+                            ), 
+                            color = Color.Gray, 
+                            style = MaterialTheme.typography.labelSmall
+                        )
                         Slider(
                             value = uiState.windMaxThreshold.toFloat(),
                             onValueChange = { viewModel.updateSettings(windMax = it.roundToInt()) },
@@ -2004,7 +2097,15 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                             UnitChip(stringResource(R.string.settings_alt_feet), uiState.altitudeUnit == DistanceUnit.FEET) { viewModel.updateSettings(altitudeUnit = DistanceUnit.FEET) }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(stringResource(R.string.settings_forecast_alt, uiState.forecastAltitude), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            text = stringResource(
+                                R.string.settings_forecast_alt, 
+                                formatAltitude(uiState.forecastAltitude, uiState.altitudeUnit),
+                                getAltitudeLabel(uiState.altitudeUnit)
+                            ), 
+                            color = Color.Gray, 
+                            style = MaterialTheme.typography.labelSmall
+                        )
                         Slider(
                             value = uiState.forecastAltitude.toFloat(),
                             onValueChange = { viewModel.updateSettings(forecastAltitude = it.roundToInt()) },
@@ -2018,7 +2119,21 @@ fun SettingsScreen(viewModel: WeatherViewModel) {
                 SettingsExpandableRow(stringResource(R.string.settings_visibility_label), Icons.Default.Visibility, expandedSection == "vis") { expandedSection = if (expandedSection == "vis") null else "vis" }
                 if (expandedSection == "vis") {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.settings_visibility_min, uiState.visibilityMinThreshold), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            UnitChip(stringResource(R.string.settings_visibility_km), uiState.visibilityUnit == DistanceUnit.KILOMETERS) { viewModel.updateSettings(visibilityUnit = DistanceUnit.KILOMETERS) }
+                            UnitChip(stringResource(R.string.settings_visibility_mi), uiState.visibilityUnit == DistanceUnit.MILES) { viewModel.updateSettings(visibilityUnit = DistanceUnit.MILES) }
+                            UnitChip(stringResource(R.string.settings_visibility_nm), uiState.visibilityUnit == DistanceUnit.NAUTICAL_MILES) { viewModel.updateSettings(visibilityUnit = DistanceUnit.NAUTICAL_MILES) }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.settings_visibility_min, 
+                                convertKmToUnit(uiState.visibilityMinThreshold, uiState.visibilityUnit),
+                                getVisibilityLabel(uiState.visibilityUnit)
+                            ), 
+                            color = Color.Gray, 
+                            style = MaterialTheme.typography.labelSmall
+                        )
                         Slider(
                             value = uiState.visibilityMinThreshold.toFloat(),
                             onValueChange = { viewModel.updateSettings(visibilityMin = it.toDouble()) },
@@ -2165,4 +2280,78 @@ fun formatTime(timestamp: Long, is24h: Boolean = true): String {
 fun getCardinalDirection(degrees: Int): String {
     val directions = listOf("N", "NE", "E", "SE", "S", "SO", "O", "NO", "N")
     return directions[((degrees % 360) / 45.0).roundToInt()]
+}
+
+fun formatAltitude(meters: Int, unit: DistanceUnit): Int {
+    return if (unit == DistanceUnit.FEET) {
+        (meters * 3.28084).roundToInt()
+    } else {
+        meters
+    }
+}
+
+fun getAltitudeLabel(unit: DistanceUnit): String {
+    return if (unit == DistanceUnit.FEET) "ft" else "m"
+}
+
+fun formatTemperature(celsius: String, unit: TemperatureUnit): String {
+    val tempC = celsius.toDoubleOrNull() ?: return celsius
+    return if (unit == TemperatureUnit.FAHRENHEIT) {
+        ((tempC * 9 / 5) + 32).roundToInt().toString()
+    } else {
+        tempC.roundToInt().toString()
+    }
+}
+
+fun getTemperatureLabel(unit: TemperatureUnit): String {
+    return if (unit == TemperatureUnit.FAHRENHEIT) "°F" else "°C"
+}
+
+fun formatWindSpeed(speedKmh: String, unit: WindUnit): String {
+    val speed = speedKmh.toDoubleOrNull() ?: return speedKmh
+    return when (unit) {
+        WindUnit.KMH -> speed.roundToInt().toString()
+        WindUnit.KNOTS -> (speed / 1.852).roundToInt().toString()
+        WindUnit.MPH -> (speed / 1.609).roundToInt().toString()
+        WindUnit.MS -> (speed / 3.6).roundToInt().toString()
+    }
+}
+
+fun getWindUnitLabel(unit: WindUnit): String {
+    return when (unit) {
+        WindUnit.KMH -> "km/h"
+        WindUnit.KNOTS -> "kt"
+        WindUnit.MPH -> "mph"
+        WindUnit.MS -> "m/s"
+    }
+}
+
+fun formatVisibility(km: String, unit: DistanceUnit): String {
+    val value = km.replace(">", "").toDoubleOrNull() ?: return km
+    val converted = when (unit) {
+        DistanceUnit.KILOMETERS -> value
+        DistanceUnit.MILES -> value * 0.621371
+        DistanceUnit.NAUTICAL_MILES -> value * 0.539957
+        else -> value
+    }
+    val prefix = if (km.startsWith(">")) ">" else ""
+    return "$prefix${String.format(Locale.US, "%.1f", converted)}"
+}
+
+fun getVisibilityLabel(unit: DistanceUnit): String {
+    return when (unit) {
+        DistanceUnit.KILOMETERS -> "km"
+        DistanceUnit.MILES -> "mi"
+        DistanceUnit.NAUTICAL_MILES -> "nm"
+        else -> "km"
+    }
+}
+
+fun convertKmToUnit(km: Double, unit: DistanceUnit): Double {
+    return when (unit) {
+        DistanceUnit.KILOMETERS -> km
+        DistanceUnit.MILES -> km * 0.621371
+        DistanceUnit.NAUTICAL_MILES -> km * 0.539957
+        else -> km
+    }
 }

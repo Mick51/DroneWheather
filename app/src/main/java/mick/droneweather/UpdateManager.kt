@@ -24,10 +24,10 @@ class UpdateManager(private val context: Context) {
                 val latest = RetrofitInstance.githubApi.getLatestRelease()
                 
                 // 1. Try to extract version code from tag
-                // If tag is "v1.5", we want "1.5". If it's "v6", we want "6"
+                // If tag is "v1.7", we want "1.7". If it's "v8", we want "8"
                 val tagClean = latest.tagName.lowercase().removePrefix("v").trim()
                 
-                // Try direct numeric conversion (for tags like "6")
+                // Try direct numeric conversion (for tags like "8")
                 val latestVersionCode = tagClean.toLongOrNull() ?: 0L
                 
                 Log.d("UpdateManager", "DEBUG_UPDATE: Local=$currentVersionCode, GitHubTag=$tagClean (ExtractedCode=$latestVersionCode)")
@@ -43,7 +43,7 @@ class UpdateManager(private val context: Context) {
                     }
                 }
 
-                // 3. Fallback: Semantic comparison for strings like "1.5" vs local info
+                // 3. Fallback: Semantic comparison for strings like "1.7" vs local info
                 val currentVersionName = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
                 val localClean = currentVersionName.lowercase().replace("beta", "").trim()
                 

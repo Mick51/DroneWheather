@@ -69,7 +69,7 @@ data class HourlyForecast(
 )
 
 enum class WeatherSource {
-    DEFAULT, OPEN_METEO, APPLE_WEATHER
+    OPEN_METEO, METEOCIEL
 }
 
 enum class AppTab {
@@ -84,7 +84,9 @@ enum class UpdateCheckStatus {
     IDLE, CHECKING, UP_TO_DATE, UPDATE_FOUND, ERROR
 }
 
-enum class DistanceUnit { METERS, FEET, KILOMETERS }
+enum class DistanceUnit { METERS, FEET, KILOMETERS, MILES, NAUTICAL_MILES }
+enum class TemperatureUnit { CELSIUS, FAHRENHEIT }
+enum class WindUnit { KMH, KNOTS, MPH, MS }
 
 data class ChecklistItem(
     val id: String = UUID.randomUUID().toString(),
@@ -136,7 +138,7 @@ data class WeatherUiState(
     val isSafe: Boolean = true,
     val statusTextResId: Int = R.string.status_ready,
     val statusColor: Color = GreenSafe,
-    val selectedSource: WeatherSource = WeatherSource.DEFAULT,
+    val selectedSource: WeatherSource = WeatherSource.OPEN_METEO,
 
     // App Settings
     val language: String = Locale.getDefault().language.let { lang ->
@@ -144,8 +146,10 @@ data class WeatherUiState(
     },
     val timeFormat24h: Boolean = true, // Will be updated in MainActivity
     val droneType: DroneType = DroneType.DJI_MINI,
+    val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     val tempMinThreshold: Int = 0,
     val tempMaxThreshold: Int = 40,
+    val windUnit: WindUnit = WindUnit.KMH,
     val windMaxThreshold: Int = 25,
     val altitudeUnit: DistanceUnit = DistanceUnit.METERS,
     val forecastAltitude: Int = 10,
@@ -251,13 +255,16 @@ class WeatherViewModel(
         return WeatherUiState(
             language = settingsManager.getString("language", Locale.getDefault().language.let { if (it in listOf("fr", "en", "pl")) it else "en" }),
             timeFormat24h = settingsManager.getBoolean("timeFormat24h", true),
-            droneType = DroneType.valueOf(settingsManager.getString("droneType", DroneType.DJI_MINI.name)),
+            droneType = try { DroneType.valueOf(settingsManager.getString("droneType", DroneType.DJI_MINI.name)) } catch (_: Exception) { DroneType.DJI_MINI },
+            temperatureUnit = try { TemperatureUnit.valueOf(settingsManager.getString("temperatureUnit", TemperatureUnit.CELSIUS.name)) } catch (_: Exception) { TemperatureUnit.CELSIUS },
             tempMinThreshold = settingsManager.getInt("tempMin", 0),
             tempMaxThreshold = settingsManager.getInt("tempMax", 40),
+            windUnit = try { WindUnit.valueOf(settingsManager.getString("windUnit", WindUnit.KMH.name)) } catch (_: Exception) { WindUnit.KMH },
             windMaxThreshold = settingsManager.getInt("windMax", 25),
-            altitudeUnit = DistanceUnit.valueOf(settingsManager.getString("altitudeUnit", DistanceUnit.METERS.name)),
+            altitudeUnit = try { DistanceUnit.valueOf(settingsManager.getString("altitudeUnit", DistanceUnit.METERS.name)) } catch (_: Exception) { DistanceUnit.METERS },
             forecastAltitude = settingsManager.getInt("forecastAltitude", 10),
             visibilityMinThreshold = settingsManager.getDouble("visibilityMin", 5.0),
+            visibilityUnit = try { DistanceUnit.valueOf(settingsManager.getString("visibilityUnit", DistanceUnit.KILOMETERS.name)) } catch (_: Exception) { DistanceUnit.KILOMETERS },
             precipMaxThreshold = settingsManager.getInt("precipMax", 60),
             useGps = settingsManager.getBoolean("useGps", true),
             useGlonass = settingsManager.getBoolean("useGlonass", true),
@@ -269,7 +276,7 @@ class WeatherViewModel(
             smoothAnim = settingsManager.getBoolean("smoothAnim", true),
             alertWeather = settingsManager.getBoolean("alertWeather", true),
             morningForecast = settingsManager.getBoolean("morningForecast", false),
-            selectedSource = WeatherSource.valueOf(settingsManager.getString("selectedSource", WeatherSource.DEFAULT.name))
+            selectedSource = try { WeatherSource.valueOf(settingsManager.getString("selectedSource", WeatherSource.OPEN_METEO.name)) } catch (_: Exception) { WeatherSource.OPEN_METEO }
         )
     }
 
@@ -461,8 +468,9 @@ class WeatherViewModel(
         
         viewModelScope.launch {
             try {
+                val currentState = _uiState.value
                 val data = withContext(Dispatchers.IO) {
-                    repository.getWeatherData(city, lat, lon, force)
+                    repository.getWeatherData(city, lat, lon, force, currentState.selectedSource)
                 }
                 
                 // Update map center and basic data first
@@ -648,8 +656,10 @@ class WeatherViewModel(
         language: String? = null,
         timeFormat24h: Boolean? = null,
         droneType: DroneType? = null,
+        temperatureUnit: TemperatureUnit? = null,
         tempMin: Int? = null,
         tempMax: Int? = null,
+        windUnit: WindUnit? = null,
         windMax: Int? = null,
         altitudeUnit: DistanceUnit? = null,
         forecastAltitude: Int? = null,
@@ -672,12 +682,15 @@ class WeatherViewModel(
         language?.let { settingsManager.saveString("language", it) }
         timeFormat24h?.let { settingsManager.saveBoolean("timeFormat24h", it) }
         droneType?.let { settingsManager.saveString("droneType", it.name) }
+        temperatureUnit?.let { settingsManager.saveString("temperatureUnit", it.name) }
         tempMin?.let { settingsManager.saveInt("tempMin", it) }
         tempMax?.let { settingsManager.saveInt("tempMax", it) }
+        windUnit?.let { settingsManager.saveString("windUnit", it.name) }
         windMax?.let { settingsManager.saveInt("windMax", it) }
         altitudeUnit?.let { settingsManager.saveString("altitudeUnit", it.name) }
         forecastAltitude?.let { settingsManager.saveInt("forecastAltitude", it) }
         visibilityMin?.let { settingsManager.saveDouble("visibilityMin", it) }
+        visibilityUnit?.let { settingsManager.saveString("visibilityUnit", it.name) }
         precipMax?.let { settingsManager.saveInt("precipMax", it) }
         useGps?.let { settingsManager.saveBoolean("useGps", it) }
         useGlonass?.let { settingsManager.saveBoolean("useGlonass", it) }
@@ -695,8 +708,10 @@ class WeatherViewModel(
                 language = language ?: it.language,
                 timeFormat24h = timeFormat24h ?: it.timeFormat24h,
                 droneType = droneType ?: it.droneType,
+                temperatureUnit = temperatureUnit ?: it.temperatureUnit,
                 tempMinThreshold = tempMin ?: it.tempMinThreshold,
                 tempMaxThreshold = tempMax ?: it.tempMaxThreshold,
+                windUnit = windUnit ?: it.windUnit,
                 windMaxThreshold = windMax ?: it.windMaxThreshold,
                 altitudeUnit = altitudeUnit ?: it.altitudeUnit,
                 forecastAltitude = forecastAltitude ?: it.forecastAltitude,
@@ -767,7 +782,11 @@ class WeatherViewModel(
                 wind80m = item.wind80m,
                 wind120m = item.wind120m,
                 wind180m = item.wind180m,
+                wind320m = item.wind320m,
                 wind500m = item.wind500m,
+                wind800m = item.wind800m,
+                wind1000m = item.wind1000m,
+                wind1500m = item.wind1500m,
                 windGust = item.gusts,
                 windDeg = item.windDeg,
                 clouds = item.clouds,
@@ -895,7 +914,7 @@ class WeatherViewModel(
                     gusts = gusts,
                     kp = kp,
                     iconUrl = "https://openweathermap.org/img/wn/${map["icon"]}@2x.png",
-                    windDeg = (map["windDeg"] as? Double)?.toInt() ?: 0,
+                    windDeg = map["windDeg"]?.toString()?.toDoubleOrNull()?.toInt() ?: 0,
                     clouds = (map["clouds"] as? Double)?.toInt() ?: 0,
                     visibility = map["visibility"]?.toString() ?: ">10",
                     precip = (map["precip"] as? Double)?.toInt() ?: 0,

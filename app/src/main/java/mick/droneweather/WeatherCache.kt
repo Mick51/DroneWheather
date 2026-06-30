@@ -48,6 +48,7 @@ data class WeatherCache(
     val cityName: String,
     val latitude: Double,
     val longitude: Double,
+    val weatherSource: String = "OPEN_METEO",
     val lastUpdated: Long
 )
 

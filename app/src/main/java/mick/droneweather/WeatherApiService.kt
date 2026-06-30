@@ -123,6 +123,7 @@ interface WeatherApiService {
         @Query("hourly") hourly: String = "temperature_2m,wind_speed_10m,wind_speed_80m,wind_speed_120m,wind_speed_180m,wind_speed_975hPa,wind_speed_950hPa,wind_speed_925hPa,wind_speed_900hPa,wind_speed_850hPa,wind_gusts_10m,wind_direction_10m,precipitation_probability,weather_code,visibility,cloud_cover",
         @Query("daily") daily: String = "sunrise,sunset",
         @Query("wind_speed_unit") windSpeedUnit: String = "kmh",
+        @Query("models") models: String? = null,
         @Query("timezone") timezone: String = "auto",
         @Query("timeformat") timeformat: String = "unixtime",
         @Query("forecast_days") days: Int = 7
