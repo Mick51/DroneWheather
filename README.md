@@ -14,6 +14,7 @@ Most drone weather apps provide basic estimates. DroneWeather stands out through
     - **Days 4-7**: Predictive modeling based on the NOAA 27-day outlook, enhanced with a natural cyclic variation algorithm. This gives you a realistic, hour-by-hour estimation of geomagnetic activity for a full week, allowing for better mission planning.
 - **UAV-Centric Wind Profiling**: Generic apps give you ground wind. We provide a **Wind Profile** from the ground up to 1500m (5000ft), crucial for understanding wind shear and battery consumption at flight altitude.
 - **DJI RC2 Optimized**: Specifically designed and tested to run smoothly on dedicated controllers like the DJI RC2, with an interface that remains readable and responsive in the field.
+- **Multi-Model Support (AROME)**: Access high-resolution models like Météo-France AROME (1.3km) for superior local accuracy.
 
 ## Key Features
 
@@ -24,6 +25,7 @@ Most drone weather apps provide basic estimates. DroneWeather stands out through
     - **Wind Compass**: Visualize wind direction relative to your phone's orientation.
     - **Pilot Checklist**: Customizable pre-flight safety steps.
     - **Detailed Forecast Table**: Hourly breakdown of all flight parameters.
+- **Advanced Metrics**: Integrated Dew Point monitoring and full multi-unit support (Metric/Imperial).
 - **Multilingual**: Native support for French, English, and Polish.
 
 ## Technical Stack
@@ -59,6 +61,7 @@ Là où la plupart des applications fournissent des estimations simplistes, Dron
     - **Jours 4-7** : Modélisation prédictive basée sur les perspectives à 27 jours de la NOAA, enrichie par un algorithme de variation cyclique naturelle. Cela vous donne une estimation réaliste, heure par heure, sur une semaine complète pour mieux planifier vos missions.
 - **Profil de Vent Spécifique UAV** : Les applications génériques donnent le vent au sol. Nous fournissons un **Profil de Vent** du sol jusqu'à 1500m, indispensable pour anticiper le cisaillement du vent et la consommation batterie en altitude.
 - **Optimisé DJI RC2** : Conçu et testé pour fonctionner parfaitement sur les radiocommandes comme la DJI RC2, avec une interface lisible et réactive sur le terrain.
+- **Support Multi-Modèles (AROME)** : Accès au modèle haute résolution AROME de Météo-France (1.3km) pour une précision locale supérieure.
 
 ## Caractéristiques Principales
 
@@ -69,6 +72,7 @@ Là où la plupart des applications fournissent des estimations simplistes, Dron
     - **Boussole de Vent** : Direction du vent par rapport à l'orientation de l'appareil.
     - **Check-list** : Liste de vérification personnalisable avant le décollage.
     - **Tableau de Prévisions** : Détails horaires de tous les paramètres critiques.
+- **Indicateurs Avancés** : Suivi du Point de rosée et support complet des unités (Celsius/Fahrenheit, Mètres/Pieds, km/h/kt/mph).
 
 ## Pile Technique
 

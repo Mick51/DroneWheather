@@ -127,7 +127,7 @@ class MainActivity : AppCompatActivity() {
                         pInfo.versionCode.toLong()
                     }
                 } catch (_: Exception) {
-                    8L
+                    9L
                 }
             }
 
@@ -1098,7 +1098,7 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
                 @Suppress("DEPRECATION")
                 pInfo.versionCode.toLong()
             }
-        } catch (_: Exception) { 8L }
+        } catch (_: Exception) { 9L }
         viewModel.checkForUpdates(context, currentVersionCode = currentVersionCode)
 
         // Initialiser le format 24h selon les paramètres du système
@@ -1721,9 +1721,9 @@ fun HelpScreen(viewModel: WeatherViewModel) {
     
     val currentVersionName = remember {
         try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.7"
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.8"
         } catch (_: Exception) {
-            "1.7"
+            "1.8"
         }
     }
 
@@ -1958,7 +1958,7 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                             @Suppress("DEPRECATION")
                             pInfo.versionCode.toLong()
                         }
-                    } catch (_: Exception) { 8L }
+                    } catch (_: Exception) { 9L }
                     viewModel.checkForUpdates(context, manual = true, currentVersionCode = currentVersionCode) 
                 },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B0FF)),
