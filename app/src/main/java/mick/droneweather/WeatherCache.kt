@@ -35,6 +35,7 @@ data class WeatherCache(
     val windDeg: Int,
     val clouds: Int,
     val temperature: String,
+    val dewPoint: String = "0",
     val kpValue: Double?,
     val currentBz: Double,
     val solarWindSpeed: Double = 0.0,

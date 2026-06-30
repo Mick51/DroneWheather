@@ -21,7 +21,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [WeatherCache::class, SatelliteForecast::class, TleData::class], version = 12)
+@Database(entities = [WeatherCache::class, SatelliteForecast::class, TleData::class], version = 13)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun weatherDao(): WeatherDao
 

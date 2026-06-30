@@ -212,6 +212,7 @@ class WeatherRepository(
             val newClouds = current.clouds
             val newPrecip = if (current.precipitation > 0) 100 else 0
             val newTemp = current.temperature.toInt().toString()
+            val newDewPoint = current.dewPoint.toInt().toString()
             val newWeatherIcon = mapWmoToIcon(current.weatherCode)
             val visKm = ((response.hourly.visibility.getOrNull(currentHourIdx) ?: 10000.0) / 1000).toInt()
             val newVisibility = if (visKm >= 10) ">10" else visKm.toString()
@@ -228,6 +229,7 @@ class WeatherRepository(
             forecastItems.add(mapOf(
                 "dt" to nowSeconds.toDouble(),
                 "temp" to newTemp,
+                "dew" to newDewPoint,
                 "wind" to newWindSpeed,
                 "wind80m" to newWind80m,
                 "wind120m" to newWind120m,
@@ -259,6 +261,7 @@ class WeatherRepository(
                 forecastItems.add(mapOf(
                     "dt" to ts.toDouble(),
                     "temp" to hourly.temperature[i].toInt().toString(),
+                    "dew" to hourly.dewPoint[i].toInt().toString(),
                     "wind" to hourly.windSpeed[i].toInt().toString(),
                     "wind80m" to (hourly.windSpeed80m?.getOrNull(i)?.toInt()?.toString() ?: "0"),
                     "wind120m" to (hourly.windSpeed120m?.getOrNull(i)?.toInt()?.toString() ?: "0"),
@@ -294,6 +297,7 @@ class WeatherRepository(
                 windDeg = newWindDeg,
                 clouds = newClouds,
                 temperature = newTemp,
+                dewPoint = newDewPoint,
                 kpValue = newKpValue,
                 currentBz = newBz,
                 solarWindSpeed = newSolarWindSpeed,

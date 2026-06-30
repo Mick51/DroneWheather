@@ -36,6 +36,7 @@ data class OpenMeteoResponse(
 data class OpenMeteoCurrent(
     val time: Long,
     @SerializedName("temperature_2m") val temperature: Double,
+    @SerializedName("dew_point_2m") val dewPoint: Double,
     @SerializedName("relative_humidity_2m") val humidity: Int,
     @SerializedName("wind_speed_10m") val windSpeed: Double,
     @SerializedName("wind_gusts_10m") val windGust: Double,
@@ -49,6 +50,7 @@ data class OpenMeteoCurrent(
 data class OpenMeteoHourly(
     val time: List<Long>,
     @SerializedName("temperature_2m") val temperature: List<Double>,
+    @SerializedName("dew_point_2m") val dewPoint: List<Double>,
     @SerializedName("wind_speed_10m") val windSpeed: List<Double>,
     @SerializedName("wind_speed_80m") val windSpeed80m: List<Double>?,
     @SerializedName("wind_speed_120m") val windSpeed120m: List<Double>?,
@@ -119,8 +121,8 @@ interface WeatherApiService {
     suspend fun getForecast(
         @Query("latitude") lat: Double,
         @Query("longitude") lon: Double,
-        @Query("current") current: String = "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,weather_code,precipitation",
-        @Query("hourly") hourly: String = "temperature_2m,wind_speed_10m,wind_speed_80m,wind_speed_120m,wind_speed_180m,wind_speed_975hPa,wind_speed_950hPa,wind_speed_925hPa,wind_speed_900hPa,wind_speed_850hPa,wind_gusts_10m,wind_direction_10m,precipitation_probability,weather_code,visibility,cloud_cover",
+        @Query("current") current: String = "temperature_2m,dew_point_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,weather_code,precipitation",
+        @Query("hourly") hourly: String = "temperature_2m,dew_point_2m,wind_speed_10m,wind_speed_80m,wind_speed_120m,wind_speed_180m,wind_speed_975hPa,wind_speed_950hPa,wind_speed_925hPa,wind_speed_900hPa,wind_speed_850hPa,wind_gusts_10m,wind_direction_10m,precipitation_probability,weather_code,visibility,cloud_cover",
         @Query("daily") daily: String = "sunrise,sunset",
         @Query("wind_speed_unit") windSpeedUnit: String = "kmh",
         @Query("models") models: String? = null,

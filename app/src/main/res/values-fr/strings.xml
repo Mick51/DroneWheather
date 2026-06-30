@@ -14,6 +14,7 @@
     <string name="metric_sunrise">Lever / Coucher</string>
     <string name="metric_sunset">Coucher Soleil</string>
     <string name="metric_temperature">Température</string>
+    <string name="metric_dew_point">Point de rosée</string>
     <string name="metric_bz_field">Champ Bz</string>
     <string name="metric_sats_vis">Sats. Vis.</string>
     <string name="metric_sats_lock">Sats. Lock</string>

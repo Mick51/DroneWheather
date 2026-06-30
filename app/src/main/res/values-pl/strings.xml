@@ -14,6 +14,7 @@
     <string name="metric_sunrise">Wschód/Zachód</string>
     <string name="metric_sunset">Zachód słońca</string>
     <string name="metric_temperature">Temperatura</string>
+    <string name="metric_dew_point">Punkt rosy</string>
     <string name="metric_bz_field">Pole Bz</string>
     <string name="metric_sats_vis">Sat. widoczne</string>
     <string name="metric_sats_lock">Sat. zablokowane</string>

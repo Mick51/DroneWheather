@@ -47,6 +47,7 @@ data class HourlyForecast(
     val timestamp: Long,
     val time: String,
     val temp: String,
+    val dewPoint: String = "0",
     val wind: String,
     val wind80m: String = "0",
     val wind120m: String = "0",
@@ -126,6 +127,7 @@ data class WeatherUiState(
     val windDeg: Int = 0,
     val clouds: Int = 0,
     val temperature: String = "0",
+    val dewPoint: String = "0",
     val kpValue: Double? = null,
     val visibility: String = ">10",
     val weatherIcon: String? = null,
@@ -537,6 +539,7 @@ class WeatherViewModel(
                                 windDeg = selected.windDeg,
                                 clouds = selected.clouds,
                                 temperature = selected.temp,
+                                dewPoint = selected.dewPoint,
                                 kpValue = selected.kp.toDoubleOrNull(),
                                 visibility = selected.visibility,
                                 weatherIcon = selected.weatherIcon,
@@ -562,6 +565,7 @@ class WeatherViewModel(
                                 windDeg = data.windDeg,
                                 clouds = data.clouds,
                                 temperature = data.temperature,
+                                dewPoint = data.dewPoint,
                                 kpValue = data.kpValue,
                                 visibility = data.visibility,
                                 weatherIcon = data.weatherIcon,
@@ -791,6 +795,7 @@ class WeatherViewModel(
                 windDeg = item.windDeg,
                 clouds = item.clouds,
                 temperature = item.temp,
+                dewPoint = item.dewPoint,
                 kpValue = item.kp.toDoubleOrNull(),
                 visibility = item.visibility,
                 weatherIcon = item.weatherIcon,
@@ -882,6 +887,8 @@ class WeatherViewModel(
                 val dt = (map["dt"] as? Double)?.toLong() ?: 0L
                 val isNow = map["isNow"] as? Boolean ?: false
                 val wind = map["wind"]?.toString() ?: "0"
+                val temp = map["temp"]?.toString() ?: "0"
+                val dew = map["dew"]?.toString() ?: "0"
                 val wind80m = map["wind80m"]?.toString() ?: wind
                 val wind120m = map["wind120m"]?.toString() ?: wind80m
                 val wind180m = map["wind180m"]?.toString() ?: wind120m
@@ -901,7 +908,8 @@ class WeatherViewModel(
                 HourlyForecast(
                     timestamp = dt,
                     time = sdf.format(Date(dt * 1000)),
-                    temp = map["temp"]?.toString() ?: "0",
+                    temp = temp,
+                    dewPoint = dew,
                     wind = wind,
                     wind80m = wind80m,
                     wind120m = wind120m,

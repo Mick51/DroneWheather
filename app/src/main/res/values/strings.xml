@@ -14,6 +14,7 @@
     <string name="metric_sunrise">Sun Times</string>
     <string name="metric_sunset">Sunset</string>
     <string name="metric_temperature">Temperature</string>
+    <string name="metric_dew_point">Dew Point</string>
     <string name="metric_bz_field">Bz Field</string>
     <string name="metric_sats_vis">Sats. Vis.</string>
     <string name="metric_sats_lock">Sats. Lock</string>

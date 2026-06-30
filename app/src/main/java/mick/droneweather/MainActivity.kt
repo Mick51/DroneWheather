@@ -863,7 +863,13 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), isLandscape = true, onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
-                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), isLandscape = true, modifier = Modifier.weight(1f), onClick = { 
+                        detailTitle = context.getString(R.string.metric_temperature)
+                        val formattedTemp = formatTemperature(uiState.temperature, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
+                        val formattedDew = formatTemperature(uiState.dewPoint, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
+                        detailDesc = context.getString(R.string.desc_temp) + "\n\n" + context.getString(R.string.metric_dew_point) + " : " + formattedDew
+                        showDetail = true 
+                    })
                     MetricCard(
                         title = stringResource(R.string.metric_sats_vis), 
                         value = uiState.forecastSats.toString(), 
@@ -906,7 +912,13 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     SunTimesCard(sunrise = formatTime(uiState.sunrise, uiState.timeFormat24h), sunset = formatTime(uiState.sunset, uiState.timeFormat24h), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_sunrise); detailDesc = context.getString(R.string.desc_sunrise_sunset); showDetail = true })
                 }
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_temperature); detailDesc = context.getString(R.string.desc_temp); showDetail = true })
+                    MetricCard(title = stringResource(R.string.metric_temperature), value = "${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", backgroundColor = viewModel.getCardColor("Temp", uiState.temperature, uiState), modifier = Modifier.weight(1f), onClick = { 
+                        detailTitle = context.getString(R.string.metric_temperature)
+                        val formattedTemp = formatTemperature(uiState.temperature, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
+                        val formattedDew = formatTemperature(uiState.dewPoint, uiState.temperatureUnit) + getTemperatureLabel(uiState.temperatureUnit)
+                        detailDesc = context.getString(R.string.desc_temp) + "\n\n" + context.getString(R.string.metric_dew_point) + " : " + formattedDew
+                        showDetail = true 
+                    })
                     MetricCard(
                         title = stringResource(R.string.metric_sats_vis), 
                         value = uiState.forecastSats.toString(), 
@@ -958,13 +970,13 @@ fun SkyGoDashboard(viewModel: WeatherViewModel) {
                         )
                     } else {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = uiState.updateAvailable!!.body,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
-                            maxLines = 5,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Box(modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
+                            Text(
+                                text = uiState.updateAvailable!!.body,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
                     }
                 }
             },
