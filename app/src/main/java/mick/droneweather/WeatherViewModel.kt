@@ -165,12 +165,12 @@ data class WeatherUiState(
     val favorites: Set<String> = emptySet(),
 
     val checklist: List<ChecklistItem> = listOf(
-        ChecklistItem(text = "VÃ©rifier les autorisations et l'espace aÃ©rien"),
-        ChecklistItem(text = "Inspecter le drone (hÃ©lices, batterie et structure)"),
-        ChecklistItem(text = "Planifier l'itinÃ©raire"),
-        ChecklistItem(text = "VÃ©rifier les conditions mÃ©tÃ©orologiques"),
-        ChecklistItem(text = "Calibrer la boussole et dÃ©finir le point de dÃ©part"),
-        ChecklistItem(text = "S'assurer d'une zone de dÃ©collage sÃ»re"),
+        ChecklistItem(text = "Vérifier les autorisations et l'espace aérien"),
+        ChecklistItem(text = "Inspecter le drone (hélices, batterie et structure)"),
+        ChecklistItem(text = "Planifier l'itinéraire"),
+        ChecklistItem(text = "Vérifier les conditions météorologiques"),
+        ChecklistItem(text = "Calibrer la boussole et définir le point de départ"),
+        ChecklistItem(text = "S'assurer d'une zone de décollage sûre"),
     )
 )
 
