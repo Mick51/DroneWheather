@@ -158,4 +158,10 @@
     <string name="help_app_version">DroneWeather v%1$s</string>
     <string name="help_data_sources">Sources de données</string>
     <string name="help_open_meteo_credit">Données météo par Open-Meteo.com &amp; Météociel</string>
+    <string name="help_reset_data_title">Réinitialiser les données</string>
+    <string name="help_reset_data_desc">Effacer le cache météo, les favoris et les réglages personnalisés.</string>
+    <string name="btn_reset_data">Réinitialiser l\'application</string>
+    <string name="reset_confirm_title">Confirmation</string>
+    <string name="reset_confirm_message">Voulez-vous vraiment supprimer toutes les données et réglages ? Cette action est irréversible.</string>
+    <string name="btn_delete">Supprimer</string>
 </resources>

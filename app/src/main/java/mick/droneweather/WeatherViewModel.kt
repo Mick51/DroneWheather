@@ -575,6 +575,24 @@ class WeatherViewModel(
         }
     }
 
+    fun clearAppData(context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            
+            // 1. Clear Database
+            repository.clearAllData()
+            
+            // 2. Clear Preferences
+            settingsManager.clearAll()
+            
+            // 3. Reset UI State to default
+            _uiState.value = WeatherUiState()
+            
+            // 4. Force immediate update from GPS
+            updateLocationAndData(context, force = true, useGpsExplicitly = true)
+        }
+    }
+
     fun toggleChecklistItem(id: String) {
         _uiState.update { state ->
             state.copy(

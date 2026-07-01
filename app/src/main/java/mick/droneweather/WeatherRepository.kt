@@ -325,6 +325,12 @@ class WeatherRepository(
         weatherDao.insertSatelliteForecasts(forecasts)
     }
 
+    suspend fun clearAllData() {
+        weatherDao.clearWeatherCache()
+        weatherDao.clearSatelliteForecasts()
+        weatherDao.clearTleData()
+    }
+
     private fun findKpForTime(timestamp: Long, kpForecast: List<KpEntry>?, kp27Day: String?): String {
         fun parseNoaaTime(tag: String): Long {
             return try {

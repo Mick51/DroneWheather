@@ -2024,6 +2024,67 @@ fun HelpScreen(viewModel: WeatherViewModel) {
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(if (isLandscape) 16.dp else 32.dp))
+
+        // Reset Data Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                var showConfirmDialog by remember { mutableStateOf(false) }
+
+                Text(
+                    text = stringResource(R.string.help_reset_data_title),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.help_reset_data_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { showConfirmDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.btn_reset_data), color = Color.White)
+                }
+
+                if (showConfirmDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showConfirmDialog = false },
+                        title = { Text(stringResource(R.string.reset_confirm_title)) },
+                        text = { Text(stringResource(R.string.reset_confirm_message)) },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    viewModel.clearAppData(context)
+                                    showConfirmDialog = false
+                                }
+                            ) {
+                                Text(stringResource(R.string.btn_delete), color = Color.Red)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showConfirmDialog = false }) {
+                                Text(stringResource(R.string.btn_cancel))
+                            }
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 

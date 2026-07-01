@@ -48,11 +48,11 @@ class SettingsManager(context: Context) {
     }
 
     fun saveDouble(key: String, value: Double) {
-        prefs.edit { putFloat(key, value.toFloat()) }
+        prefs.edit { putLong(key, java.lang.Double.doubleToRawLongBits(value)) }
     }
 
     fun getDouble(key: String, defaultValue: Double): Double {
-        return prefs.getFloat(key, defaultValue.toFloat()).toDouble()
+        return java.lang.Double.longBitsToDouble(prefs.getLong(key, java.lang.Double.doubleToRawLongBits(defaultValue)))
     }
 
     fun saveStringSet(key: String, value: Set<String>) {
@@ -61,5 +61,9 @@ class SettingsManager(context: Context) {
 
     fun getStringSet(key: String, defaultValue: Set<String>): Set<String> {
         return prefs.getStringSet(key, defaultValue) ?: defaultValue
+    }
+
+    fun clearAll() {
+        prefs.edit { clear() }
     }
 }

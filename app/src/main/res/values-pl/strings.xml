@@ -158,4 +158,10 @@
     <string name="help_app_version">Wersja DroneWeather %1$s</string>
     <string name="help_data_sources">Źródła danych</string>
     <string name="help_open_meteo_credit">Dane pogodowe od Open-Meteo.com i Météociel</string>
+    <string name="help_reset_data_title">Resetuj dane aplikacji</string>
+    <string name="help_reset_data_desc">Wyczyść pamięć podręczną pogody, ulubione i ustawienia niestandardowe.</string>
+    <string name="btn_reset_data">Resetuj aplikację</string>
+    <string name="reset_confirm_title">Potwierdzenie</string>
+    <string name="reset_confirm_message">Czy na pewno chcesz usunąć wszystkie dane i ustawienia? Tej operacji nie można cofnąć.</string>
+    <string name="btn_delete">Usuń</string>
 </resources>

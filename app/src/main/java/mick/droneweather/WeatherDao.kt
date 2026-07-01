@@ -46,5 +46,11 @@ interface WeatherDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTleData(tleList: List<TleData>)
+
+    @Query("DELETE FROM weather_cache")
+    suspend fun clearWeatherCache()
+
+    @Query("DELETE FROM satellite_forecast")
+    suspend fun clearSatelliteForecasts()
 }
 
