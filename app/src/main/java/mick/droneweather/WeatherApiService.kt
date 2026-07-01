@@ -89,10 +89,15 @@ data class GeocodingResult(
 
 data class KpEntry(
     @SerializedName("time_tag") val timeTag: String,
-    @SerializedName("Kp") val kpValue: Double,
-    @SerializedName("a_running") val aRunning: Int? = null,
-    @SerializedName("station_count") val stationCount: Int? = null
-)
+    @SerializedName("Kp") val kpUpper: String? = null,    // GFZ or some NOAA variants
+    @SerializedName("kp") val kpLower: String? = null,    // NOAA products/noaa-planetary-k-index.json
+    @SerializedName("kp_index") val kpIndex: String? = null, // NOAA json/planetary_k_index_1m.json
+    @SerializedName("a_running") val aRunning: String? = null,
+    @SerializedName("station_count") val stationCount: String? = null
+) {
+    val effectiveKp: Double
+        get() = (kpUpper ?: kpLower ?: kpIndex)?.toDoubleOrNull() ?: 0.0
+}
 
 data class GfzKpResponse(
     @SerializedName("Kp") val kpValues: List<Double>,
@@ -169,7 +174,7 @@ interface KpApiService {
     suspend fun getMagData(): List<List<Any>>
 
     @GET("products/noaa-planetary-k-index-forecast.json")
-    suspend fun getKpForecast(): List<Map<String, Any>>
+    suspend fun getKpForecast(): List<KpEntry>
 
     @GET("text/27-day-outlook.txt")
     suspend fun getKp27DayOutlook(): okhttp3.ResponseBody

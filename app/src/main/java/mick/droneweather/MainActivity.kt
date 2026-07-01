@@ -812,7 +812,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                             // Option GPS (Position Actuelle)
                             Row(
                                 modifier = Modifier.fillMaxWidth().clickable {
-                                    viewModel.updateLocationAndData(context, force = true)
+                                    viewModel.updateLocationAndData(context, force = true, useGpsExplicitly = true)
                                     showSearchDialog = false
                                 }.padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically

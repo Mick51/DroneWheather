@@ -18,7 +18,6 @@ package mick.droneweather
 
 import android.content.Context
 import android.location.Location
-import android.os.Build
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -35,9 +34,10 @@ import mick.droneweather.ui.theme.RedDanger
 import mick.droneweather.ui.theme.YellowWarn
 import org.osmdroid.util.GeoPoint
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 data class HourlyForecast(
     val timestamp: Long,
@@ -62,7 +62,7 @@ data class HourlyForecast(
     val precip: Int,
     val weatherIcon: String?,
     val isNow: Boolean,
-    val safetyColor: Color
+    val safetyColor: Color,
 )
 
 enum class WeatherSource { OPEN_METEO, METEOCIEL }
@@ -77,7 +77,7 @@ enum class WindUnit { KMH, KNOTS, MPH, MS }
 data class ChecklistItem(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
-    val isChecked: Boolean = false
+    val isChecked: Boolean = false,
 )
 
 data class WeatherUiState(
@@ -113,7 +113,8 @@ data class WeatherUiState(
     val clouds: Int = 0,
     val temperature: String = "20",
     val dewPoint: String = "15",
-    val kpValue: Double? = 2.0,
+    val kpValue: Double? = 2.0, // Selected/Displayed value
+    val liveKp: Double = 2.0,   // Real-time measurement
     val visibility: String = ">10",
     val weatherIcon: String? = null,
     val precip: Int = 0,
@@ -169,7 +170,7 @@ data class WeatherUiState(
         ChecklistItem(text = "Planifier l'itinÃ©raire"),
         ChecklistItem(text = "VÃ©rifier les conditions mÃ©tÃ©orologiques"),
         ChecklistItem(text = "Calibrer la boussole et dÃ©finir le point de dÃ©part"),
-        ChecklistItem(text = "S'assurer d'une zone de dÃ©collage sÃ»re")
+        ChecklistItem(text = "S'assurer d'une zone de dÃ©collage sÃ»re"),
     )
 )
 
@@ -246,7 +247,7 @@ class WeatherViewModel(
                 processRefreshResult(cached, null, null)
                 
                 // Trigger recalculation from cache if we have coordinates
-                if (cached.latitude != 0.0 && cached.longitude != 0.0) {
+                if ((cached.latitude != 0.0) && (cached.longitude != 0.0)) {
                     Log.d("WeatherViewModel", "Triggering initial sat calculation from cache")
                     triggerSatelliteRecalculation(cached.latitude, cached.longitude)
                 }
@@ -320,7 +321,7 @@ class WeatherViewModel(
                 val data = withContext(Dispatchers.IO) {
                     repository.getWeatherData(city, lat, lon, force, targetSource)
                 }
-                if (lat != null && lon != null) {
+                if ((lat != null) && (lon != null)) {
                     settingsManager.saveString("lastSearchedCity", city)
                 }
                 processRefreshResult(data, lat, lon)
@@ -341,7 +342,7 @@ class WeatherViewModel(
         )
 
         // RESTORED: Trigger satellite recalculation when we have a position
-        if (data.latitude != 0.0 && data.longitude != 0.0) {
+        if ((data.latitude != 0.0) && (data.longitude != 0.0)) {
             triggerSatelliteRecalculation(data.latitude, data.longitude)
         }
 
@@ -370,10 +371,17 @@ class WeatherViewModel(
                         abs(it.timestamp - selected.timestamp) 
                     }
 
+                    val kpValueToUse = if (selected.isNow) {
+                        data.kpValue // Live for Now
+                    } else {
+                        selected.kp.toDoubleOrNull() ?: 2.0
+                    }
+
                     val (safety, resId, color) = calculateSafetyStatus(
-                        selected.wind, selected.gusts, selected.kp.toDoubleOrNull(), data.currentBz, selected.precip, selected.temp
+                        selected.wind, selected.gusts, kpValueToUse, data.currentBz, selected.precip, selected.temp
                     )
                     updatedState.copy(
+                        liveKp = data.kpValue ?: 2.0,
                         windSpeed = selected.wind,
                         wind80m = selected.wind80m,
                         wind120m = selected.wind120m,
@@ -388,7 +396,7 @@ class WeatherViewModel(
                         clouds = selected.clouds,
                         temperature = selected.temp,
                         dewPoint = selected.dewPoint,
-                        kpValue = selected.kp.toDoubleOrNull(),
+                        kpValue = kpValueToUse,
                         visibility = selected.visibility,
                         weatherIcon = selected.weatherIcon,
                         precip = selected.precip,
@@ -447,8 +455,14 @@ class WeatherViewModel(
                     abs(it.timestamp - item.timestamp) 
                 }
 
+                val kpValueToUse = if (item.isNow) {
+                    state.liveKp 
+                } else {
+                    item.kp.toDoubleOrNull() ?: 2.0
+                }
+
                 val (safety, resId, color) = calculateSafetyStatus(
-                    item.wind, item.gusts, item.kp.toDoubleOrNull(), state.currentBz, item.precip, item.temp
+                    item.wind, item.gusts, kpValueToUse, state.currentBz, item.precip, item.temp
                 )
 
                 state.copy(
@@ -467,7 +481,7 @@ class WeatherViewModel(
                     clouds = item.clouds,
                     temperature = item.temp,
                     dewPoint = item.dewPoint,
-                    kpValue = item.kp.toDoubleOrNull(),
+                    kpValue = kpValueToUse,
                     visibility = item.visibility,
                     weatherIcon = item.weatherIcon,
                     precip = item.precip,
@@ -481,7 +495,16 @@ class WeatherViewModel(
         }
     }
 
-    fun updateLocationAndData(context: Context, force: Boolean = false) {
+    fun updateLocationAndData(context: Context, force: Boolean = false, useGpsExplicitly: Boolean = false) {
+        val currentState = _uiState.value
+        
+        // Si on n'a pas demandé explicitement le GPS et qu'on a déjà une ville (autre que "Position actuelle"),
+        // on rafraîchit la ville actuelle.
+        if (force && !useGpsExplicitly && currentState.cityNameState.isNotBlank() && currentState.cityNameState != "Position actuelle") {
+            refresh(city = currentState.cityNameState, force = true)
+            return
+        }
+
         _uiState.update { it.copy(isLoading = true) }
         val locationClient = LocationServices.getFusedLocationProviderClient(context)
         try {
@@ -512,7 +535,7 @@ class WeatherViewModel(
                 val addresses = withContext(Dispatchers.IO) { geocoder.getFromLocation(lat, lon, 1) }
                 val cityName = addresses?.firstOrNull()?.locality ?: "Position actuelle"
                 refresh(cityName, lat, lon, force)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 refresh("Position actuelle", lat, lon, force)
             }
         }
