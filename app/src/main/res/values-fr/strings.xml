@@ -91,6 +91,7 @@
     <string name="search_dialog_title">Rechercher une ville</string>
     <string name="btn_cancel">Annuler</string>
     <string name="btn_search">Rechercher</string>
+    <string name="favorites_title">Favoris</string>
     <string name="settings_language">Langue</string>
     <string name="lang_fr">Français</string>
     <string name="lang_en">Anglais</string>

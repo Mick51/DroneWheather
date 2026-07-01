@@ -49,6 +49,7 @@ class SatellitePredictor {
         useGalileo: Boolean = true,
         useBeidou: Boolean = true
     ): List<SatelliteForecast> {
+        android.util.Log.d("SatellitePredictor", "Generating forecast for Lat: $startLat, Lon: $startLon, TLEs: ${tleList.size}")
         val forecasts = mutableListOf<SatelliteForecast>()
         val now = (System.currentTimeMillis() / 1000) / 3600 * 3600
         val step = 3600 // 1 hour steps for 7 days (168 points)
@@ -64,10 +65,13 @@ class SatellitePredictor {
             try {
                 val tle = TLE(tleData.line1, tleData.line2)
                 TLEPropagator.selectExtrapolator(tle)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.e("SatellitePredictor", "Error creating propagator for ${tleData.satelliteName}: ${e.message}")
                 null
             }
         }
+        
+        android.util.Log.d("SatellitePredictor", "Created ${propagators.size} propagators")
 
         val lockProbabilityBase = when {
             currentKp >= 5f -> 0.4f

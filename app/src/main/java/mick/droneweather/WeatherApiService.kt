@@ -24,34 +24,34 @@ import com.google.gson.annotations.SerializedName
 // --- Open-Meteo Models ---
 
 data class OpenMeteoResponse(
-    val current: OpenMeteoCurrent,
-    val hourly: OpenMeteoHourly,
-    val daily: OpenMeteoDaily,
-    val latitude: Double,
-    val longitude: Double,
-    val elevation: Double,
-    val timezone: String
+    val current: OpenMeteoCurrent?,
+    val hourly: OpenMeteoHourly?,
+    val daily: OpenMeteoDaily?,
+    val latitude: Double?,
+    val longitude: Double?,
+    val elevation: Double?,
+    val timezone: String?
 )
 
 data class OpenMeteoCurrent(
-    val time: Long,
-    @SerializedName("temperature_2m") val temperature: Double,
-    @SerializedName("dew_point_2m") val dewPoint: Double,
-    @SerializedName("relative_humidity_2m") val humidity: Int,
-    @SerializedName("wind_speed_10m") val windSpeed: Double,
-    @SerializedName("wind_gusts_10m") val windGust: Double,
-    @SerializedName("wind_direction_10m") val windDeg: Int,
-    @SerializedName("cloud_cover") val clouds: Int,
-    @SerializedName("weather_code") val weatherCode: Int,
-    val precipitation: Double,
-    @SerializedName("visibility_gl") val visibility: Double?
+    val time: Long?,
+    @SerializedName("temperature_2m") val temperature: Double?,
+    @SerializedName("dew_point_2m") val dewPoint: Double?,
+    @SerializedName("relative_humidity_2m") val humidity: Int?,
+    @SerializedName("wind_speed_10m") val windSpeed: Double?,
+    @SerializedName("wind_gusts_10m") val windGust: Double?,
+    @SerializedName("wind_direction_10m") val windDeg: Int?,
+    @SerializedName("cloud_cover") val clouds: Int?,
+    @SerializedName("weather_code") val weatherCode: Int?,
+    val precipitation: Double?,
+    @SerializedName("visibility") val visibility: Double?
 )
 
 data class OpenMeteoHourly(
-    val time: List<Long>,
-    @SerializedName("temperature_2m") val temperature: List<Double>,
-    @SerializedName("dew_point_2m") val dewPoint: List<Double>,
-    @SerializedName("wind_speed_10m") val windSpeed: List<Double>,
+    val time: List<Long>?,
+    @SerializedName("temperature_2m") val temperature: List<Double>?,
+    @SerializedName("dew_point_2m") val dewPoint: List<Double>?,
+    @SerializedName("wind_speed_10m") val windSpeed: List<Double>?,
     @SerializedName("wind_speed_80m") val windSpeed80m: List<Double>?,
     @SerializedName("wind_speed_120m") val windSpeed120m: List<Double>?,
     @SerializedName("wind_speed_180m") val windSpeed180m: List<Double>?,
@@ -60,18 +60,18 @@ data class OpenMeteoHourly(
     @SerializedName("wind_speed_925hPa") val windSpeed800m: List<Double>?,
     @SerializedName("wind_speed_900hPa") val windSpeed1000m: List<Double>?,
     @SerializedName("wind_speed_850hPa") val windSpeed1500m: List<Double>?,
-    @SerializedName("wind_gusts_10m") val windGust: List<Double>,
-    @SerializedName("wind_direction_10m") val windDeg: List<Int>,
-    @SerializedName("precipitation_probability") val precipProb: List<Int>,
-    @SerializedName("weather_code") val weatherCode: List<Int>,
-    @SerializedName("visibility") val visibility: List<Double>,
-    @SerializedName("cloud_cover") val clouds: List<Int>
+    @SerializedName("wind_gusts_10m") val windGust: List<Double>?,
+    @SerializedName("wind_direction_10m") val windDeg: List<Int>?,
+    @SerializedName("precipitation_probability") val precipProb: List<Int>?,
+    @SerializedName("weather_code") val weatherCode: List<Int>?,
+    @SerializedName("visibility") val visibility: List<Double>?,
+    @SerializedName("cloud_cover") val clouds: List<Int>?
 )
 
 data class OpenMeteoDaily(
-    val time: List<Long>,
-    val sunrise: List<Long>,
-    val sunset: List<Long>
+    val time: List<Long>?,
+    val sunrise: List<Long>?,
+    val sunset: List<Long>?
 )
 
 data class GeocodingResponse(
@@ -121,11 +121,24 @@ interface WeatherApiService {
     suspend fun getForecast(
         @Query("latitude") lat: Double,
         @Query("longitude") lon: Double,
-        @Query("current") current: String = "temperature_2m,dew_point_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,weather_code,precipitation",
+        @Query("current") current: String = "temperature_2m,dew_point_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,weather_code,precipitation,visibility",
         @Query("hourly") hourly: String = "temperature_2m,dew_point_2m,wind_speed_10m,wind_speed_80m,wind_speed_120m,wind_speed_180m,wind_speed_975hPa,wind_speed_950hPa,wind_speed_925hPa,wind_speed_900hPa,wind_speed_850hPa,wind_gusts_10m,wind_direction_10m,precipitation_probability,weather_code,visibility,cloud_cover",
         @Query("daily") daily: String = "sunrise,sunset",
         @Query("wind_speed_unit") windSpeedUnit: String = "kmh",
         @Query("models") models: String? = null,
+        @Query("timezone") timezone: String = "auto",
+        @Query("timeformat") timeformat: String = "unixtime",
+        @Query("forecast_days") days: Int = 7
+    ): OpenMeteoResponse
+
+    @GET("meteofrance")
+    suspend fun getMeteoFranceForecast(
+        @Query("latitude") lat: Double,
+        @Query("longitude") lon: Double,
+        @Query("current") current: String = "temperature_2m,dew_point_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,weather_code,precipitation,visibility",
+        @Query("hourly") hourly: String = "temperature_2m,dew_point_2m,wind_speed_10m,wind_speed_80m,wind_speed_120m,wind_speed_180m,wind_speed_975hPa,wind_speed_950hPa,wind_speed_925hPa,wind_speed_900hPa,wind_speed_850hPa,wind_gusts_10m,wind_direction_10m,precipitation_probability,weather_code,visibility,cloud_cover",
+        @Query("daily") daily: String = "sunrise,sunset",
+        @Query("wind_speed_unit") windSpeedUnit: String = "kmh",
         @Query("timezone") timezone: String = "auto",
         @Query("timeformat") timeformat: String = "unixtime",
         @Query("forecast_days") days: Int = 7
@@ -176,4 +189,3 @@ interface GitHubApiService {
     @GET("repos/Mick51/DroneWheather/releases/latest")
     suspend fun getLatestRelease(): GitHubRelease
 }
-

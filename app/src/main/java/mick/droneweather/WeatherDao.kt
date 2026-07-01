@@ -23,8 +23,8 @@ import androidx.room.Query
 
 @Dao
 interface WeatherDao {
-    @Query("SELECT * FROM weather_cache WHERE id = 0")
-    suspend fun getCachedData(): WeatherCache?
+    @Query("SELECT * FROM weather_cache WHERE weatherSource = :source")
+    suspend fun getCachedData(source: String): WeatherCache?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateCache(data: WeatherCache)

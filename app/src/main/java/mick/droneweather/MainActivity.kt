@@ -401,7 +401,7 @@ fun InteractiveForecastSelector(
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.clickable {
                         val nowIdx = uiState.hourlyForecast.indexOfFirst { it.isNow }
-                        if (nowIdx != -1) viewModel.selectForecastIndex(nowIdx)
+                        if (nowIdx != -1) viewModel.updateSelectedHour(nowIdx)
                     }
                 )
             }
@@ -430,7 +430,7 @@ fun InteractiveForecastSelector(
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 val globalIdx = uiState.hourlyForecast.indexOf(dayHours[newStep])
                                 if (globalIdx != -1) {
-                                    viewModel.selectForecastIndex(globalIdx)
+                                    viewModel.updateSelectedHour(globalIdx)
                                 }
                             }
                             sliderValue = newValue
@@ -449,7 +449,7 @@ fun InteractiveForecastSelector(
                         
                         val globalIdx = uiState.hourlyForecast.indexOf(dayHours[newStep])
                         if (globalIdx != -1) {
-                            viewModel.selectForecastIndex(globalIdx)
+                            viewModel.updateSelectedHour(globalIdx)
                         }
                         sliderValue = newValue
                     }
@@ -555,7 +555,7 @@ fun InteractiveForecastSelector(
                                 val globalIdx = uiState.hourlyForecast.indexOfFirst { 
                                     sdfSearch.format(Date(it.timestamp * 1000)) == day.date 
                                 }
-                                if (globalIdx != -1) viewModel.selectForecastIndex(globalIdx)
+                                if (globalIdx != -1) viewModel.updateSelectedHour(globalIdx)
                             },
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
@@ -597,7 +597,7 @@ fun InteractiveForecastSelector(
                                 val globalIdx = uiState.hourlyForecast.indexOfFirst { 
                                     sdfSearch.format(Date(it.timestamp * 1000)) == day.date 
                                 }
-                                if (globalIdx != -1) viewModel.selectForecastIndex(globalIdx)
+                                if (globalIdx != -1) viewModel.updateSelectedHour(globalIdx)
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -751,6 +751,17 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                     }
                 }
                 Row {
+                    val isFavorite = uiState.favorites.contains(uiState.cityNameState)
+                    IconButton(onClick = { 
+                        if (uiState.cityNameState.isNotBlank()) viewModel.toggleFavorite(uiState.cityNameState) 
+                    }, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color.Yellow else MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                     IconButton(onClick = { showSearchDialog = true }, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search_content_description), tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(24.dp))
                     }
@@ -797,6 +808,49 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                                     cursorColor = NeonGreen
                                 )
                             )
+                            
+                            // Option GPS (Position Actuelle)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    viewModel.updateLocationAndData(context, force = true)
+                                    showSearchDialog = false
+                                }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MyLocation,
+                                    contentDescription = null,
+                                    tint = NeonGreen,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(R.string.current_location),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            if (uiState.favorites.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(stringResource(R.string.favorites_title), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                                Column {
+                                    uiState.favorites.forEach { fav ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().clickable {
+                                                viewModel.refresh(fav, force = true)
+                                                showSearchDialog = false
+                                            }.padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(Icons.Default.Star, contentDescription = null, tint = Color.Yellow, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(fav, color = MaterialTheme.colorScheme.onSurface)
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                 TextButton(onClick = { showSearchDialog = false }) {
                                     Text(stringResource(R.string.btn_cancel), color = Color.Gray)

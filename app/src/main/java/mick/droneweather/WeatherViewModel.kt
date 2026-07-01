@@ -16,74 +16,59 @@
 
 package mick.droneweather
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.location.Geocoder
+import android.location.Location
+import android.os.Build
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import mick.droneweather.ui.theme.GreenSafe
-import mick.droneweather.ui.theme.YellowWarn
-import mick.droneweather.ui.theme.RedDanger
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import mick.droneweather.ui.theme.GreenSafe
+import mick.droneweather.ui.theme.RedDanger
+import mick.droneweather.ui.theme.YellowWarn
 import org.osmdroid.util.GeoPoint
+import java.text.SimpleDateFormat
 import java.util.*
-
-// --- ModÃƒÂ¨les d'ÃƒÂ©tat ---
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 data class HourlyForecast(
     val timestamp: Long,
     val time: String,
     val temp: String,
-    val dewPoint: String = "0",
+    val dewPoint: String,
     val wind: String,
-    val wind80m: String = "0",
-    val wind120m: String = "0",
-    val wind180m: String = "0",
-    val wind320m: String = "0",
-    val wind500m: String = "0",
-    val wind800m: String = "0",
-    val wind1000m: String = "0",
-    val wind1500m: String = "0",
+    val wind80m: String,
+    val wind120m: String,
+    val wind180m: String,
+    val wind320m: String,
+    val wind500m: String,
+    val wind800m: String,
+    val wind1000m: String,
+    val wind1500m: String,
     val gusts: String,
     val kp: String,
     val iconUrl: String,
-    val windDeg: Int = 0,
-    val clouds: Int = 0,
-    val visibility: String = ">10",
-    val precip: Int = 0,
-    val weatherIcon: String? = null,
-    val isNow: Boolean = false,
-    val safetyColor: Color = GreenSafe,
+    val windDeg: Int,
+    val clouds: Int,
+    val visibility: String,
+    val precip: Int,
+    val weatherIcon: String?,
+    val isNow: Boolean,
+    val safetyColor: Color
 )
 
-enum class WeatherSource {
-    OPEN_METEO, METEOCIEL
-}
-
-enum class AppTab {
-    DASHBOARD, TOOLS, COMMUNITY, HELP, SETTINGS
-}
-
-enum class DroneType {
-    DJI_MINI, DJI_AIR, DJI_MAVIC, CUSTOM
-}
-
-enum class UpdateCheckStatus {
-    IDLE, CHECKING, UP_TO_DATE, UPDATE_FOUND, ERROR
-}
+enum class WeatherSource { OPEN_METEO, METEOCIEL }
+enum class AppTab { DASHBOARD, TOOLS, COMMUNITY, HELP, SETTINGS }
+enum class DroneType { DJI_MINI, DJI_AIR, DJI_MAVIC, CUSTOM }
+enum class UpdateCheckStatus { IDLE, CHECKING, UP_TO_DATE, UPDATE_FOUND, ERROR }
 
 enum class DistanceUnit { METERS, FEET, KILOMETERS, MILES, NAUTICAL_MILES }
 enum class TemperatureUnit { CELSIUS, FAHRENHEIT }
@@ -101,11 +86,11 @@ data class WeatherUiState(
     val mapCenter: GeoPoint = GeoPoint(49.2217, 3.9928),
     val detailedError: String? = null,
     val isLoading: Boolean = false,
-    val lastUpdate: Long = 0L,
-    val sats: Int = 12,
-    val satsLocked: Int = 8,
-    val sunrise: Long = 0L,
-    val sunset: Long = 0L,
+    val lastUpdate: Long = 0,
+    val sats: Int = 0,
+    val satsLocked: Int = 0,
+    val sunrise: Long = 0,
+    val sunset: Long = 0,
     val currentBz: Double = 0.0,
     val solarWindSpeed: Double = 0.0,
     val solarWindDensity: Double = 0.0,
@@ -113,7 +98,7 @@ data class WeatherUiState(
     val hourlyForecast: List<HourlyForecast> = emptyList(),
     val selectedIndex: Int = 0,
     
-    // Derived values for the currently selected hour
+    // Valeurs affichÃ©es (peuvent provenir du point selectionnÃ©)
     val windSpeed: String = "0",
     val wind80m: String = "0",
     val wind120m: String = "0",
@@ -126,27 +111,25 @@ data class WeatherUiState(
     val windGust: String = "0",
     val windDeg: Int = 0,
     val clouds: Int = 0,
-    val temperature: String = "0",
-    val dewPoint: String = "0",
-    val kpValue: Double? = null,
+    val temperature: String = "20",
+    val dewPoint: String = "15",
+    val kpValue: Double? = 2.0,
     val visibility: String = ">10",
     val weatherIcon: String? = null,
     val precip: Int = 0,
-    
-    // Predicted satellites for the selected hour
+
+    // Stats Satellites calculÃ©es
     val forecastSats: Int = 0,
     val forecastSatsLocked: Int = 0,
-    
+
     val isSafe: Boolean = true,
     val statusTextResId: Int = R.string.status_ready,
     val statusColor: Color = GreenSafe,
     val selectedSource: WeatherSource = WeatherSource.OPEN_METEO,
 
-    // App Settings
-    val language: String = Locale.getDefault().language.let { lang ->
-        if (lang in listOf("fr", "en", "pl")) lang else "en"
-    },
-    val timeFormat24h: Boolean = true, // Will be updated in MainActivity
+    // ParamÃ¨tres utilisateur
+    val language: String = "fr",
+    val timeFormat24h: Boolean = true,
     val droneType: DroneType = DroneType.DJI_MINI,
     val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     val tempMinThreshold: Int = 0,
@@ -158,38 +141,37 @@ data class WeatherUiState(
     val visibilityUnit: DistanceUnit = DistanceUnit.KILOMETERS,
     val visibilityMinThreshold: Double = 5.0,
     val precipMaxThreshold: Int = 60,
-    
+
     val useGps: Boolean = true,
     val useGlonass: Boolean = true,
     val useGalileo: Boolean = true,
     val useBeidou: Boolean = false,
-    
+
     val alertRain: Boolean = true,
     val alertStorm: Boolean = true,
     val darkTheme: Boolean = true,
     val smoothAnim: Boolean = true,
     val alertWeather: Boolean = true,
     val morningForecast: Boolean = false,
-    
+
     val updateAvailable: GitHubRelease? = null,
     val updateProgress: Float = 0f,
     val isDownloadingUpdate: Boolean = false,
     val lastUpdateCheckStatus: UpdateCheckStatus = UpdateCheckStatus.IDLE,
-    
+
     val deviceAzimuth: Float = 0f,
     val satelliteForecast: List<SatelliteForecast> = emptyList(),
+    val favorites: Set<String> = emptySet(),
 
     val checklist: List<ChecklistItem> = listOf(
-        ChecklistItem(text = "Vérifier les autorisations et l'espace aérien"),
-        ChecklistItem(text = "Inspecter le drone (hélices, batterie et structure)"),
-        ChecklistItem(text = "Planifier l'itinéraire"),
-        ChecklistItem(text = "Vérifier les conditions météorologiques"),
-        ChecklistItem(text = "Calibrer la boussole et définir le point de départ"),
-        ChecklistItem(text = "S'assurer d'une zone de décollage sûre")
+        ChecklistItem(text = "VÃ©rifier les autorisations et l'espace aÃ©rien"),
+        ChecklistItem(text = "Inspecter le drone (hÃ©lices, batterie et structure)"),
+        ChecklistItem(text = "Planifier l'itinÃ©raire"),
+        ChecklistItem(text = "VÃ©rifier les conditions mÃ©tÃ©orologiques"),
+        ChecklistItem(text = "Calibrer la boussole et dÃ©finir le point de dÃ©part"),
+        ChecklistItem(text = "S'assurer d'une zone de dÃ©collage sÃ»re")
     )
 )
-
-// --- ViewModel ---
 
 class WeatherViewModel(
     private val repository: WeatherRepository,
@@ -198,12 +180,17 @@ class WeatherViewModel(
 
     private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
-    
+
     private var isCalculatingSatellites = false
+    private var refreshJob: Job? = null
 
     init {
         loadCachedData()
         loadSatelliteForecast()
+        viewModelScope.launch {
+            val lastCity = settingsManager.getString("lastSearchedCity", "Bezannes")
+            refresh(city = lastCity) 
+        }
     }
 
     fun checkForUpdates(context: Context, manual: Boolean = false, currentVersionCode: Long) {
@@ -228,29 +215,43 @@ class WeatherViewModel(
         }
     }
 
-    fun downloadUpdate(context: Context) {
-        val release = _uiState.value.updateAvailable ?: return
-        _uiState.update { it.copy(isDownloadingUpdate = true) }
+    fun downloadAndInstallUpdate(context: Context, release: GitHubRelease) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isDownloadingUpdate = true, updateProgress = 0f) }
+            val updateManager = UpdateManager(context)
             try {
-                val updateManager = UpdateManager(context)
                 updateManager.downloadAndInstall(release) { progress ->
                     _uiState.update { it.copy(updateProgress = progress) }
                 }
-                // If we reach here, the installation intent was started.
-                // We keep updateAvailable so the user can try again if they canceled the installer,
-                // but we might want to hide the "Downloading" state.
             } catch (e: Exception) {
-                Log.e("WeatherViewModel", "Update failed", e)
-                // Optionally update state with error message
-            } finally {
+                Log.e("WeatherViewModel", "Update failed: ${e.message}")
                 _uiState.update { it.copy(isDownloadingUpdate = false) }
             }
         }
     }
 
+    fun downloadUpdate(context: Context) {
+        val release = _uiState.value.updateAvailable ?: return
+        downloadAndInstallUpdate(context, release)
+    }
+
     fun dismissUpdate() {
         _uiState.update { it.copy(updateAvailable = null) }
+    }
+
+    private fun loadCachedData() {
+        viewModelScope.launch {
+            try {
+                val cached = repository.getWeatherData(city = "Cache", source = _uiState.value.selectedSource)
+                processRefreshResult(cached, null, null)
+                
+                // Trigger recalculation from cache if we have coordinates
+                if (cached.latitude != 0.0 && cached.longitude != 0.0) {
+                    Log.d("WeatherViewModel", "Triggering initial sat calculation from cache")
+                    triggerSatelliteRecalculation(cached.latitude, cached.longitude)
+                }
+            } catch (_: Exception) {}
+        }
     }
 
     private fun loadInitialState(): WeatherUiState {
@@ -278,25 +279,27 @@ class WeatherViewModel(
             smoothAnim = settingsManager.getBoolean("smoothAnim", true),
             alertWeather = settingsManager.getBoolean("alertWeather", true),
             morningForecast = settingsManager.getBoolean("morningForecast", false),
-            selectedSource = try { WeatherSource.valueOf(settingsManager.getString("selectedSource", WeatherSource.OPEN_METEO.name)) } catch (_: Exception) { WeatherSource.OPEN_METEO }
+            selectedSource = try { WeatherSource.valueOf(settingsManager.getString("selectedSource", WeatherSource.OPEN_METEO.name)) } catch (_: Exception) { WeatherSource.OPEN_METEO },
+            favorites = settingsManager.getStringSet("favorites", emptySet())
         )
     }
 
     private fun loadSatelliteForecast() {
         viewModelScope.launch {
             repository.getSatelliteForecastFlow().collect { forecasts ->
+                Log.d("WeatherViewModel", "Received ${forecasts.size} satellite forecasts from DB")
                 val now = System.currentTimeMillis() / 1000
                 
                 _uiState.update { currentState ->
                     val selectedHour = currentState.hourlyForecast.getOrNull(currentState.selectedIndex)
                     val correspondingSat = if (selectedHour != null) {
-                        forecasts.minByOrNull { kotlin.math.abs(it.timestamp - selectedHour.timestamp) }
+                        forecasts.minByOrNull { abs(it.timestamp - selectedHour.timestamp) }
                     } else {
-                        forecasts.minByOrNull { kotlin.math.abs(it.timestamp - now) }
+                        forecasts.minByOrNull { abs(it.timestamp - now) }
                     }
 
                     currentState.copy(
-                        satelliteForecast = forecasts,
+                        satelliteForecast = forecasts.ifEmpty { currentState.satelliteForecast },
                         forecastSats = correspondingSat?.availableSatellites ?: currentState.forecastSats,
                         forecastSatsLocked = correspondingSat?.lockedSatellites ?: currentState.forecastSatsLocked
                     )
@@ -305,9 +308,360 @@ class WeatherViewModel(
         }
     }
 
-    private fun loadCachedData() {
+    fun refresh(city: String, lat: Double? = null, lon: Double? = null, force: Boolean = false, source: WeatherSource? = null) {
+        refreshJob?.cancel()
+        _uiState.update { it.copy(detailedError = null, isLoading = true) }
+        
+        val targetSource = source ?: _uiState.value.selectedSource
+        Log.d("WeatherViewModel", "Refreshing UI [City: $city, Source: ${targetSource.name}, Force: $force]")
+        
+        refreshJob = viewModelScope.launch {
+            try {
+                val data = withContext(Dispatchers.IO) {
+                    repository.getWeatherData(city, lat, lon, force, targetSource)
+                }
+                if (lat != null && lon != null) {
+                    settingsManager.saveString("lastSearchedCity", city)
+                }
+                processRefreshResult(data, lat, lon)
+            } catch (e: Exception) {
+                handleRefreshError(e)
+            }
+        }
+    }
+
+    private suspend fun processRefreshResult(data: WeatherCache, lat: Double?, lon: Double?) {
+        val forecast = withContext(Dispatchers.Default) {
+            parseForecast(data.forecastJson)
+        }
+        
+        val now = System.currentTimeMillis() / 1000
+        val (isSafe, statusResId, statusColor) = calculateSafetyStatus(
+            data.windSpeed, data.windGust, data.kpValue, data.currentBz, data.precip, data.temperature
+        )
+
+        // RESTORED: Trigger satellite recalculation when we have a position
+        if (data.latitude != 0.0 && data.longitude != 0.0) {
+            triggerSatelliteRecalculation(data.latitude, data.longitude)
+        }
+
+        _uiState.update { state ->
+            val targetSource = try { WeatherSource.valueOf(data.weatherSource) } catch(_: Exception) { state.selectedSource }
+            
+            state.copy(
+                selectedSource = targetSource,
+                currentBz = data.currentBz,
+                solarWindSpeed = data.solarWindSpeed,
+                solarWindDensity = data.solarWindDensity,
+                sunrise = data.sunrise,
+                sunset = data.sunset,
+                cityNameState = data.cityName,
+                mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else state.mapCenter,
+                isLoading = false,
+                lastUpdate = data.lastUpdated,
+                hourlyForecast = forecast,
+                selectedIndex = forecast.indexOfFirst { it.isNow }.takeIf { idx -> idx != -1 } 
+                    ?: forecast.indexOfFirst { item -> item.timestamp >= now }.coerceAtLeast(0)
+            ).let { updatedState ->
+                val idx = updatedState.selectedIndex
+                if (forecast.isNotEmpty() && idx in forecast.indices) {
+                    val selected = forecast[idx]
+                    val satForecast = updatedState.satelliteForecast.minByOrNull { 
+                        abs(it.timestamp - selected.timestamp) 
+                    }
+
+                    val (safety, resId, color) = calculateSafetyStatus(
+                        selected.wind, selected.gusts, selected.kp.toDoubleOrNull(), data.currentBz, selected.precip, selected.temp
+                    )
+                    updatedState.copy(
+                        windSpeed = selected.wind,
+                        wind80m = selected.wind80m,
+                        wind120m = selected.wind120m,
+                        wind180m = selected.wind180m,
+                        wind320m = selected.wind320m,
+                        wind500m = selected.wind500m,
+                        wind800m = selected.wind800m,
+                        wind1000m = selected.wind1000m,
+                        wind1500m = selected.wind1500m,
+                        windGust = selected.gusts,
+                        windDeg = selected.windDeg,
+                        clouds = selected.clouds,
+                        temperature = selected.temp,
+                        dewPoint = selected.dewPoint,
+                        kpValue = selected.kp.toDoubleOrNull(),
+                        visibility = selected.visibility,
+                        weatherIcon = selected.weatherIcon,
+                        precip = selected.precip,
+                        forecastSats = satForecast?.availableSatellites ?: updatedState.forecastSats,
+                        forecastSatsLocked = satForecast?.lockedSatellites ?: updatedState.forecastSatsLocked,
+                        isSafe = safety,
+                        statusTextResId = resId,
+                        statusColor = color
+                    )
+                } else {
+                    updatedState.copy(
+                        windSpeed = data.windSpeed,
+                        wind80m = data.wind80m,
+                        wind120m = data.wind120m,
+                        wind180m = data.wind180m,
+                        wind320m = data.wind320m,
+                        wind500m = data.wind500m,
+                        wind800m = data.wind800m,
+                        wind1000m = data.wind1000m,
+                        wind1500m = data.wind1500m,
+                        windGust = data.windGust,
+                        windDeg = data.windDeg,
+                        clouds = data.clouds,
+                        temperature = data.temperature,
+                        dewPoint = data.dewPoint,
+                        kpValue = data.kpValue,
+                        visibility = data.visibility,
+                        weatherIcon = data.weatherIcon,
+                        precip = data.precip,
+                        isSafe = isSafe,
+                        statusTextResId = statusResId,
+                        statusColor = statusColor
+                    )
+                }
+            }
+        }
+    }
+
+    private fun handleRefreshError(e: Exception) {
+        Log.e("WeatherViewModel", "Refresh Error: ${e.message}")
+        _uiState.update { it.copy(
+            detailedError = e.message ?: "Erreur inconnue",
+            isLoading = false
+        ) }
+    }
+
+    fun updateSatellites(total: Int, locked: Int) {
+        _uiState.update { it.copy(sats = total, satsLocked = locked) }
+    }
+
+    fun updateSelectedHour(index: Int) {
+        _uiState.update { state ->
+            if (index in state.hourlyForecast.indices) {
+                val item = state.hourlyForecast[index]
+                val satForecast = state.satelliteForecast.minByOrNull { 
+                    abs(it.timestamp - item.timestamp) 
+                }
+
+                val (safety, resId, color) = calculateSafetyStatus(
+                    item.wind, item.gusts, item.kp.toDoubleOrNull(), state.currentBz, item.precip, item.temp
+                )
+
+                state.copy(
+                    selectedIndex = index,
+                    windSpeed = item.wind,
+                    wind80m = item.wind80m,
+                    wind120m = item.wind120m,
+                    wind180m = item.wind180m,
+                    wind320m = item.wind320m,
+                    wind500m = item.wind500m,
+                    wind800m = item.wind800m,
+                    wind1000m = item.wind1000m,
+                    wind1500m = item.wind1500m,
+                    windGust = item.gusts,
+                    windDeg = item.windDeg,
+                    clouds = item.clouds,
+                    temperature = item.temp,
+                    dewPoint = item.dewPoint,
+                    kpValue = item.kp.toDoubleOrNull(),
+                    visibility = item.visibility,
+                    weatherIcon = item.weatherIcon,
+                    precip = item.precip,
+                    forecastSats = satForecast?.availableSatellites ?: 0,
+                    forecastSatsLocked = satForecast?.lockedSatellites ?: 0,
+                    isSafe = safety,
+                    statusTextResId = resId,
+                    statusColor = color
+                )
+            } else state
+        }
+    }
+
+    fun updateLocationAndData(context: Context, force: Boolean = false) {
+        _uiState.update { it.copy(isLoading = true) }
+        val locationClient = LocationServices.getFusedLocationProviderClient(context)
+        try {
+            locationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        processLocation(context, location, force)
+                    } else {
+                        refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+                    }
+                }
+                .addOnFailureListener {
+                    refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+                }
+        } catch (_: SecurityException) {
+            refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+        }
+    }
+
+    private fun processLocation(context: Context, location: Location, force: Boolean = false) {
+        val lat = location.latitude
+        val lon = location.longitude
+        
         viewModelScope.launch {
-            refresh(city = "Bezannes") 
+            try {
+                val geocoder = android.location.Geocoder(context, Locale.getDefault())
+                @Suppress("DEPRECATION")
+                val addresses = withContext(Dispatchers.IO) { geocoder.getFromLocation(lat, lon, 1) }
+                val cityName = addresses?.firstOrNull()?.locality ?: "Position actuelle"
+                refresh(cityName, lat, lon, force)
+            } catch (e: Exception) {
+                refresh("Position actuelle", lat, lon, force)
+            }
+        }
+    }
+
+    fun updateDeviceAzimuth(azimuth: Float) {
+        _uiState.update { it.copy(deviceAzimuth = azimuth) }
+    }
+
+    fun updateSource(source: WeatherSource) {
+        Log.d("WeatherViewModel", "User requested source change: ${source.name}")
+        settingsManager.saveString("selectedSource", source.name)
+        _uiState.update { it.copy(selectedSource = source, isLoading = true) }
+        
+        val currentState = _uiState.value
+        val lat = currentState.mapCenter.latitude
+        val lon = currentState.mapCenter.longitude
+        val city = currentState.cityNameState.takeIf { it.isNotBlank() } ?: "Position actuelle"
+        
+        refresh(city, lat, lon, force = true, source = source)
+    }
+
+    fun setTab(tab: AppTab) {
+        _uiState.update { it.copy(currentTab = tab) }
+    }
+
+    fun addChecklistItem(text: String) {
+        _uiState.update { state ->
+            val newItem = ChecklistItem(text = text)
+            state.copy(checklist = state.checklist + newItem)
+        }
+    }
+
+    fun removeChecklistItem(id: String) {
+        _uiState.update { state ->
+            state.copy(checklist = state.checklist.filter { it.id != id })
+        }
+    }
+
+    fun toggleChecklistItem(id: String) {
+        _uiState.update { state ->
+            state.copy(
+                checklist = state.checklist.map { item ->
+                    if (item.id == id) item.copy(isChecked = !item.isChecked) else item
+                }
+            )
+        }
+    }
+
+    fun toggleFavorite(city: String) {
+        _uiState.update { state ->
+            val newFavorites = if (state.favorites.contains(city)) {
+                state.favorites - city
+            } else {
+                state.favorites + city
+            }
+            settingsManager.saveStringSet("favorites", newFavorites)
+            state.copy(favorites = newFavorites)
+        }
+    }
+
+    fun updateSettings(
+        language: String? = null,
+        timeFormat24h: Boolean? = null,
+        droneType: DroneType? = null,
+        temperatureUnit: TemperatureUnit? = null,
+        tempMin: Int? = null,
+        tempMax: Int? = null,
+        windUnit: WindUnit? = null,
+        windMax: Int? = null,
+        altitudeUnit: DistanceUnit? = null,
+        forecastAltitude: Int? = null,
+        visibilityUnit: DistanceUnit? = null,
+        visibilityMin: Double? = null,
+        precipMax: Int? = null,
+        useGps: Boolean? = null,
+        useGlonass: Boolean? = null,
+        useGalileo: Boolean? = null,
+        useBeidou: Boolean? = null,
+        alertRain: Boolean? = null,
+        alertStorm: Boolean? = null,
+        darkTheme: Boolean? = null,
+        smoothAnim: Boolean? = null,
+        alertWeather: Boolean? = null,
+        morningForecast: Boolean? = null
+    ) {
+        _uiState.update { state ->
+            val newState = state.copy(
+                language = language ?: state.language,
+                timeFormat24h = timeFormat24h ?: state.timeFormat24h,
+                droneType = droneType ?: state.droneType,
+                temperatureUnit = temperatureUnit ?: state.temperatureUnit,
+                tempMinThreshold = tempMin ?: state.tempMinThreshold,
+                tempMaxThreshold = tempMax ?: state.tempMaxThreshold,
+                windUnit = windUnit ?: state.windUnit,
+                windMaxThreshold = windMax ?: state.windMaxThreshold,
+                altitudeUnit = altitudeUnit ?: state.altitudeUnit,
+                forecastAltitude = forecastAltitude ?: state.forecastAltitude,
+                visibilityUnit = visibilityUnit ?: state.visibilityUnit,
+                visibilityMinThreshold = visibilityMin ?: state.visibilityMinThreshold,
+                precipMaxThreshold = precipMax ?: state.precipMaxThreshold,
+                useGps = useGps ?: state.useGps,
+                useGlonass = useGlonass ?: state.useGlonass,
+                useGalileo = useGalileo ?: state.useGalileo,
+                useBeidou = useBeidou ?: state.useBeidou,
+                alertRain = alertRain ?: state.alertRain,
+                alertStorm = alertStorm ?: state.alertStorm,
+                darkTheme = darkTheme ?: state.darkTheme,
+                smoothAnim = smoothAnim ?: state.smoothAnim,
+                alertWeather = alertWeather ?: state.alertWeather,
+                morningForecast = morningForecast ?: state.morningForecast
+            )
+            
+            // Persist all settings
+            language?.let { settingsManager.saveString("language", it) }
+            timeFormat24h?.let { settingsManager.saveBoolean("timeFormat24h", it) }
+            droneType?.let { settingsManager.saveString("droneType", it.name) }
+            temperatureUnit?.let { settingsManager.saveString("temperatureUnit", it.name) }
+            tempMin?.let { settingsManager.saveInt("tempMin", it) }
+            tempMax?.let { settingsManager.saveInt("tempMax", it) }
+            windUnit?.let { settingsManager.saveString("windUnit", it.name) }
+            windMax?.let { settingsManager.saveInt("windMax", it) }
+            altitudeUnit?.let { settingsManager.saveString("altitudeUnit", it.name) }
+            forecastAltitude?.let { settingsManager.saveInt("forecastAltitude", it) }
+            visibilityUnit?.let { settingsManager.saveString("visibilityUnit", it.name) }
+            visibilityMin?.let { settingsManager.saveDouble("visibilityMin", it) }
+            precipMax?.let { settingsManager.saveInt("precipMax", it) }
+            useGps?.let { settingsManager.saveBoolean("useGps", it) }
+            useGlonass?.let { settingsManager.saveBoolean("useGlonass", it) }
+            useGalileo?.let { settingsManager.saveBoolean("useGalileo", it) }
+            useBeidou?.let { settingsManager.saveBoolean("useBeidou", it) }
+            alertRain?.let { settingsManager.saveBoolean("alertRain", it) }
+            alertStorm?.let { settingsManager.saveBoolean("alertStorm", it) }
+            darkTheme?.let { settingsManager.saveBoolean("darkTheme", it) }
+            smoothAnim?.let { settingsManager.saveBoolean("smoothAnim", it) }
+            alertWeather?.let { settingsManager.saveBoolean("alertWeather", it) }
+            morningForecast?.let { settingsManager.saveBoolean("morningForecast", it) }
+
+            // Recalculate safety status with new thresholds
+            val (isSafe, statusResId, statusColor) = calculateSafetyStatus(
+                newState.windSpeed, newState.windGust, newState.kpValue, newState.currentBz, newState.precip, newState.temperature, newState
+            )
+            
+            newState.copy(isSafe = isSafe, statusTextResId = statusResId, statusColor = statusColor)
+        }
+        
+        val gnssChanged = useGps != null || useGlonass != null || useGalileo != null || useBeidou != null
+        if (gnssChanged) {
+            triggerSatelliteRecalculation(_uiState.value.mapCenter.latitude, _uiState.value.mapCenter.longitude)
         }
     }
 
@@ -424,13 +778,16 @@ class WeatherViewModel(
         isCalculatingSatellites = true
         viewModelScope.launch(Dispatchers.Default) {
             try {
-                val predictor = SatellitePredictor()
                 val allTle = repository.getAllTleData()
                 
-                // Get fresh state inside the calculation block to avoid race conditions
+                if (allTle.isEmpty()) {
+                    Log.w("WeatherViewModel", "No TLE data found in DB, requesting immediate download")
+                    // If no TLE, orbital math is impossible. Predictor will return dummy data.
+                }
+
+                val predictor = SatellitePredictor()
                 val currentState = _uiState.value
                 
-                // Filter TLEs based on user settings
                 val filteredTle = allTle.filter { tle ->
                     val name = tle.satelliteName.uppercase()
                     when {
@@ -454,421 +811,12 @@ class WeatherViewModel(
                     currentState.useBeidou
                 )
                 
-                // We ONLY update the repository. 
-                // The Flow in loadSatelliteForecast will handle the UI update safely.
                 repository.updateSatelliteForecasts(satForecasts)
-                
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "Sat calculation error: ${e.message}")
             } finally {
                 isCalculatingSatellites = false
             }
-        }
-    }
-
-    fun refresh(city: String, lat: Double? = null, lon: Double? = null, force: Boolean = false) {
-        _uiState.update { it.copy(detailedError = null, isLoading = true) }
-        
-        viewModelScope.launch {
-            try {
-                val currentState = _uiState.value
-                val data = withContext(Dispatchers.IO) {
-                    repository.getWeatherData(city, lat, lon, force, currentState.selectedSource)
-                }
-                
-                // Update map center and basic data first
-                _uiState.update { it.copy(
-                    cityNameState = data.cityName,
-                    mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else it.mapCenter,
-                    kpValue = data.kpValue
-                ) }
-
-                // Generate Satellite Forecast if we have location
-                if (data.latitude != 0.0 && data.longitude != 0.0) {
-                    triggerSatelliteRecalculation(data.latitude, data.longitude)
-                }
-
-                val forecast = withContext(Dispatchers.Default) {
-                    parseForecast(data.forecastJson)
-                }
-                
-                val now = System.currentTimeMillis() / 1000
-
-                val (isSafe, statusResId, statusColor) = calculateSafetyStatus(
-                    data.windSpeed, data.windGust, data.kpValue, data.currentBz, data.precip, data.temperature
-                )
-
-                _uiState.update { state ->
-                    state.copy(
-                        currentBz = data.currentBz,
-                        solarWindSpeed = data.solarWindSpeed,
-                        solarWindDensity = data.solarWindDensity,
-                        sunrise = data.sunrise,
-                        sunset = data.sunset,
-                        cityNameState = data.cityName,
-                        mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else state.mapCenter,
-                        isLoading = false,
-                        lastUpdate = data.lastUpdated,
-                        hourlyForecast = forecast,
-                        selectedIndex = forecast.indexOfFirst { it.isNow }.takeIf { idx -> idx != -1 } 
-                            ?: forecast.indexOfFirst { item -> item.timestamp >= now }.coerceAtLeast(0)
-                    ).let { updatedState ->
-                        // Initialize selected hour data
-                        val idx = updatedState.selectedIndex
-                        if (forecast.isNotEmpty() && idx in forecast.indices) {
-                            val selected = forecast[idx]
-                            
-                            // Find corresponding satellite forecast from existing state data
-                            val satForecast = updatedState.satelliteForecast.minByOrNull { 
-                                kotlin.math.abs(it.timestamp - selected.timestamp) 
-                            }
-
-                            val (safety, resId, color) = calculateSafetyStatus(
-                                selected.wind, selected.gusts, selected.kp.toDoubleOrNull(), data.currentBz, selected.precip, selected.temp
-                            )
-                            updatedState.copy(
-                                windSpeed = selected.wind,
-                                wind80m = selected.wind80m,
-                                wind120m = selected.wind120m,
-                                wind180m = selected.wind180m,
-                                wind320m = selected.wind320m,
-                                wind500m = selected.wind500m,
-                                wind800m = selected.wind800m,
-                                wind1000m = selected.wind1000m,
-                                wind1500m = selected.wind1500m,
-                                windGust = selected.gusts,
-                                windDeg = selected.windDeg,
-                                clouds = selected.clouds,
-                                temperature = selected.temp,
-                                dewPoint = selected.dewPoint,
-                                kpValue = selected.kp.toDoubleOrNull(),
-                                visibility = selected.visibility,
-                                weatherIcon = selected.weatherIcon,
-                                precip = selected.precip,
-                                forecastSats = satForecast?.availableSatellites ?: updatedState.forecastSats,
-                                forecastSatsLocked = satForecast?.lockedSatellites ?: updatedState.forecastSatsLocked,
-                                isSafe = safety,
-                                statusTextResId = resId,
-                                statusColor = color
-                            )
-                        } else {
-                            updatedState.copy(
-                                windSpeed = data.windSpeed,
-                                wind80m = data.wind80m,
-                                wind120m = data.wind120m,
-                                wind180m = data.wind180m,
-                                wind320m = data.wind320m,
-                                wind500m = data.wind500m,
-                                wind800m = data.wind800m,
-                                wind1000m = data.wind1000m,
-                                wind1500m = data.wind1500m,
-                                windGust = data.windGust,
-                                windDeg = data.windDeg,
-                                clouds = data.clouds,
-                                temperature = data.temperature,
-                                dewPoint = data.dewPoint,
-                                kpValue = data.kpValue,
-                                visibility = data.visibility,
-                                weatherIcon = data.weatherIcon,
-                                precip = data.precip,
-                                isSafe = isSafe,
-                                statusTextResId = statusResId,
-                                statusColor = statusColor
-                            )
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("WeatherViewModel", "Erreur lors du rafraÃƒÂ®chissement: ${e.message}")
-                _uiState.update { 
-                    it.copy(
-                        detailedError = e.message ?: "Erreur de connexion",
-                        isLoading = false
-                    )
-                }
-            }
-        }
-    }
-
-    fun updateSatellites(visible: Int, locked: Int) {
-        val state = _uiState.value
-        val activeConstellations = (if(state.useGps) 1 else 0) + (if(state.useGlonass) 1 else 0) + (if(state.useGalileo) 1 else 0) + (if(state.useBeidou) 1 else 0)
-        
-        // Dynamic cap for live data to match Predictor Realism:
-        val maxVis = when(activeConstellations) {
-            4 -> 38
-            3 -> 28
-            2 -> 18
-            else -> 12
-        }
-        val maxLock = when(activeConstellations) {
-            4 -> 30
-            3 -> 24
-            2 -> 15
-            else -> 8
-        }
-
-        _uiState.update { it.copy(
-            sats = visible.coerceAtMost(maxVis), 
-            satsLocked = locked.coerceAtMost(maxLock)
-        ) }
-    }
-
-    fun updateDeviceAzimuth(azimuth: Float) {
-        _uiState.update { it.copy(deviceAzimuth = azimuth) }
-    }
-
-    fun updateSource(source: WeatherSource) {
-        settingsManager.saveString("selectedSource", source.name)
-        _uiState.update { it.copy(selectedSource = source) }
-        // Trigger a refresh with the new source
-        val currentState = _uiState.value
-        refresh(currentState.cityNameState, currentState.mapCenter.latitude, currentState.mapCenter.longitude, force = true)
-    }
-
-    fun setTab(tab: AppTab) {
-        _uiState.update { it.copy(currentTab = tab) }
-    }
-
-    fun toggleChecklistItem(id: String) {
-        _uiState.update { state ->
-            state.copy(
-                checklist = state.checklist.map { item ->
-                    if (item.id == id) item.copy(isChecked = !item.isChecked) else item
-                }
-            )
-        }
-    }
-
-    fun addChecklistItem(text: String) {
-        if (text.isBlank()) return
-        _uiState.update { state ->
-            state.copy(
-                checklist = state.checklist + ChecklistItem(text = text)
-            )
-        }
-    }
-
-    fun removeChecklistItem(id: String) {
-        _uiState.update { state ->
-            state.copy(
-                checklist = state.checklist.filter { it.id != id }
-            )
-        }
-    }
-
-    fun updateSettings(
-        language: String? = null,
-        timeFormat24h: Boolean? = null,
-        droneType: DroneType? = null,
-        temperatureUnit: TemperatureUnit? = null,
-        tempMin: Int? = null,
-        tempMax: Int? = null,
-        windUnit: WindUnit? = null,
-        windMax: Int? = null,
-        altitudeUnit: DistanceUnit? = null,
-        forecastAltitude: Int? = null,
-        visibilityUnit: DistanceUnit? = null,
-        visibilityMin: Double? = null,
-        precipMax: Int? = null,
-        useGps: Boolean? = null,
-        useGlonass: Boolean? = null,
-        useGalileo: Boolean? = null,
-        useBeidou: Boolean? = null,
-        alertRain: Boolean? = null,
-        alertStorm: Boolean? = null,
-        darkTheme: Boolean? = null,
-        smoothAnim: Boolean? = null,
-        alertWeather: Boolean? = null,
-        morningForecast: Boolean? = null
-    ) {
-        val gnssChanged = useGps != null || useGlonass != null || useGalileo != null || useBeidou != null
-        
-        language?.let { settingsManager.saveString("language", it) }
-        timeFormat24h?.let { settingsManager.saveBoolean("timeFormat24h", it) }
-        droneType?.let { settingsManager.saveString("droneType", it.name) }
-        temperatureUnit?.let { settingsManager.saveString("temperatureUnit", it.name) }
-        tempMin?.let { settingsManager.saveInt("tempMin", it) }
-        tempMax?.let { settingsManager.saveInt("tempMax", it) }
-        windUnit?.let { settingsManager.saveString("windUnit", it.name) }
-        windMax?.let { settingsManager.saveInt("windMax", it) }
-        altitudeUnit?.let { settingsManager.saveString("altitudeUnit", it.name) }
-        forecastAltitude?.let { settingsManager.saveInt("forecastAltitude", it) }
-        visibilityMin?.let { settingsManager.saveDouble("visibilityMin", it) }
-        visibilityUnit?.let { settingsManager.saveString("visibilityUnit", it.name) }
-        precipMax?.let { settingsManager.saveInt("precipMax", it) }
-        useGps?.let { settingsManager.saveBoolean("useGps", it) }
-        useGlonass?.let { settingsManager.saveBoolean("useGlonass", it) }
-        useGalileo?.let { settingsManager.saveBoolean("useGalileo", it) }
-        useBeidou?.let { settingsManager.saveBoolean("useBeidou", it) }
-        alertRain?.let { settingsManager.saveBoolean("alertRain", it) }
-        alertStorm?.let { settingsManager.saveBoolean("alertStorm", it) }
-        darkTheme?.let { settingsManager.saveBoolean("darkTheme", it) }
-        smoothAnim?.let { settingsManager.saveBoolean("smoothAnim", it) }
-        alertWeather?.let { settingsManager.saveBoolean("alertWeather", it) }
-        morningForecast?.let { settingsManager.saveBoolean("morningForecast", it) }
-
-        _uiState.update { 
-            val updatedBase = it.copy(
-                language = language ?: it.language,
-                timeFormat24h = timeFormat24h ?: it.timeFormat24h,
-                droneType = droneType ?: it.droneType,
-                temperatureUnit = temperatureUnit ?: it.temperatureUnit,
-                tempMinThreshold = tempMin ?: it.tempMinThreshold,
-                tempMaxThreshold = tempMax ?: it.tempMaxThreshold,
-                windUnit = windUnit ?: it.windUnit,
-                windMaxThreshold = windMax ?: it.windMaxThreshold,
-                altitudeUnit = altitudeUnit ?: it.altitudeUnit,
-                forecastAltitude = forecastAltitude ?: it.forecastAltitude,
-                visibilityUnit = visibilityUnit ?: it.visibilityUnit,
-                visibilityMinThreshold = visibilityMin ?: it.visibilityMinThreshold,
-                precipMaxThreshold = precipMax ?: it.precipMaxThreshold,
-                useGps = useGps ?: it.useGps,
-                useGlonass = useGlonass ?: it.useGlonass,
-                useGalileo = useGalileo ?: it.useGalileo,
-                useBeidou = useBeidou ?: it.useBeidou,
-                alertRain = alertRain ?: it.alertRain,
-                alertStorm = alertStorm ?: it.alertStorm,
-                darkTheme = darkTheme ?: it.darkTheme,
-                smoothAnim = smoothAnim ?: it.smoothAnim,
-                alertWeather = alertWeather ?: it.alertWeather,
-                morningForecast = morningForecast ?: it.morningForecast
-            )
-
-            // 1. Re-calculate colors for the entire hourly forecast list
-            val updatedForecast = updatedBase.hourlyForecast.map { hour ->
-                val (_, _, newColor) = calculateSafetyStatus(
-                    hour.wind, hour.gusts, hour.kp.toDoubleOrNull(), updatedBase.currentBz, hour.precip, hour.temp, updatedBase
-                )
-                hour.copy(safetyColor = newColor)
-            }
-
-            // 2. Re-calculate overall safety status for the currently selected hour
-            val (safety, resId, color) = calculateSafetyStatus(
-                updatedBase.windSpeed, 
-                updatedBase.windGust, 
-                updatedBase.kpValue, 
-                updatedBase.currentBz, 
-                updatedBase.precip, 
-                updatedBase.temperature,
-                updatedBase
-            )
-
-            updatedBase.copy(
-                hourlyForecast = updatedForecast,
-                isSafe = safety,
-                statusTextResId = resId,
-                statusColor = color
-            )
-        }
-
-        if (gnssChanged) {
-            val state = _uiState.value
-            triggerSatelliteRecalculation(state.mapCenter.latitude, state.mapCenter.longitude)
-        }
-    }
-
-    fun selectForecastIndex(index: Int) {
-        _uiState.update { state ->
-            if (index !in state.hourlyForecast.indices) return@update state
-            val item = state.hourlyForecast[index]
-            
-            // Find corresponding satellite forecast
-            val satForecast = state.satelliteForecast.minByOrNull { 
-                kotlin.math.abs(it.timestamp - item.timestamp) 
-            }
-            
-            val (safety, resId, color) = calculateSafetyStatus(
-                item.wind, item.gusts, item.kp.toDoubleOrNull(), state.currentBz, item.precip, item.temp
-            )
-            state.copy(
-                selectedIndex = index,
-                windSpeed = item.wind,
-                wind80m = item.wind80m,
-                wind120m = item.wind120m,
-                wind180m = item.wind180m,
-                wind320m = item.wind320m,
-                wind500m = item.wind500m,
-                wind800m = item.wind800m,
-                wind1000m = item.wind1000m,
-                wind1500m = item.wind1500m,
-                windGust = item.gusts,
-                windDeg = item.windDeg,
-                clouds = item.clouds,
-                temperature = item.temp,
-                dewPoint = item.dewPoint,
-                kpValue = item.kp.toDoubleOrNull(),
-                visibility = item.visibility,
-                weatherIcon = item.weatherIcon,
-                precip = item.precip,
-                forecastSats = satForecast?.availableSatellites ?: 0,
-                forecastSatsLocked = satForecast?.lockedSatellites ?: 0,
-                isSafe = safety,
-                statusTextResId = resId,
-                statusColor = color
-            )
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    fun updateLocationAndData(context: Context, force: Boolean = false) {
-        val fusedClient = LocationServices.getFusedLocationProviderClient(context)
-        _uiState.update { it.copy(isLoading = true) }
-
-        // Strategy for Indoor/Difficult conditions:
-        val currentState = _uiState.value
-
-        fusedClient.lastLocation
-            .addOnSuccessListener { lastLocation ->
-                if (lastLocation != null && !force) {
-                    processLocation(context, lastLocation)
-                } else {
-                    // Try to get fresh location, but with a timeout or fallback if indoors
-                    fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                        .addOnSuccessListener { location ->
-                            if (location != null) {
-                                processLocation(context, location)
-                            } else {
-                                handleLocationFallback(currentState, force)
-                            }
-                        }
-                        .addOnFailureListener {
-                            handleLocationFallback(currentState, force)
-                        }
-                }
-            }
-            .addOnFailureListener {
-                handleLocationFallback(currentState, force)
-            }
-    }
-
-    private fun handleLocationFallback(state: WeatherUiState, force: Boolean) {
-        val lat = state.mapCenter.latitude
-        val lon = state.mapCenter.longitude
-        val city = state.cityNameState.ifEmpty { "Bezannes" }
-        
-        if (lat != 0.0 && lon != 0.0) {
-            refresh(city, lat, lon, force = force)
-        } else {
-            refresh("Bezannes", 49.2217, 3.9928, force = force)
-        }
-    }
-
-    private fun processLocation(context: Context, location: android.location.Location) {
-        val lat = location.latitude
-        val lon = location.longitude
-        
-        viewModelScope.launch {
-            val geocoder = Geocoder(context, Locale.getDefault())
-            @Suppress("DEPRECATION")
-            val cityName = withContext(Dispatchers.IO) {
-                try {
-                    val addresses = geocoder.getFromLocation(lat, lon, 1)
-                    addresses?.firstOrNull()?.locality ?: "Inconnue"
-                } catch (_: Exception) {
-                    "Erreur Ville"
-                }
-            }
-            refresh(cityName, lat, lon)
         }
     }
 
@@ -877,13 +825,9 @@ class WeatherViewModel(
         return try {
             val type = object : TypeToken<List<Map<String, Any>>>() {}.type
             val rawList: List<Map<String, Any>> = Gson().fromJson(json, type)
-            
-            val timePattern = if (_uiState.value.timeFormat24h) "HH:mm" else "hh:mm a"
-            val sdf = java.text.SimpleDateFormat(timePattern, Locale.getDefault()).apply {
-                timeZone = TimeZone.getDefault()
-            }
+            val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
 
-            val realForecast = rawList.asSequence().map { map ->
+            rawList.map { map ->
                 val dt = (map["dt"] as? Double)?.toLong() ?: 0L
                 val isNow = map["isNow"] as? Boolean ?: false
                 val wind = map["wind"]?.toString() ?: "0"
@@ -897,12 +841,9 @@ class WeatherViewModel(
                 val wind800m = map["wind800m"]?.toString() ?: wind500m
                 val wind1000m = map["wind1000m"]?.toString() ?: wind800m
                 val wind1500m = map["wind1500m"]?.toString() ?: wind1000m
-                val gusts = map["gust"]?.toString() ?: "0"
-                val kp = map["kp"]?.toString() ?: "0"
-                
-                // Calculate safety color for this specific hour
-                val (_, _, sColor) = calculateSafetyStatus(
-                    wind, gusts, kp.toDoubleOrNull(), _uiState.value.currentBz, (map["precip"] as? Double)?.toInt() ?: 0, map["temp"]?.toString() ?: "0"
+
+                val (_, _, color) = calculateSafetyStatus(
+                    wind, map["gust"]?.toString() ?: "0", map["kp"]?.toString()?.toDoubleOrNull(), 0.0, (map["precip"] as? Double)?.toInt() ?: 0, temp
                 )
 
                 HourlyForecast(
@@ -919,37 +860,36 @@ class WeatherViewModel(
                     wind800m = wind800m,
                     wind1000m = wind1000m,
                     wind1500m = wind1500m,
-                    gusts = gusts,
-                    kp = kp,
-                    iconUrl = "https://openweathermap.org/img/wn/${map["icon"]}@2x.png",
-                    windDeg = map["windDeg"]?.toString()?.toDoubleOrNull()?.toInt() ?: 0,
+                    gusts = map["gust"]?.toString() ?: "0",
+                    kp = map["kp"]?.toString() ?: "0",
+                    iconUrl = "https://openweathermap.org/img/wn/${map["icon"] ?: "01d"}@2x.png",
+                    windDeg = (map["windDeg"] as? Double)?.toInt() ?: 0,
                     clouds = (map["clouds"] as? Double)?.toInt() ?: 0,
                     visibility = map["visibility"]?.toString() ?: ">10",
                     precip = (map["precip"] as? Double)?.toInt() ?: 0,
                     weatherIcon = map["icon"]?.toString(),
                     isNow = isNow,
-                    safetyColor = sColor
+                    safetyColor = color
                 )
-            }.toMutableList()
-
-            realForecast
+            }
         } catch (e: Exception) {
-            Log.e("WeatherViewModel", "Error parsing forecast: ${e.message}")
+            Log.e("WeatherViewModel", "Forecast parse error: ${e.message}")
             emptyList()
         }
     }
+
+
 }
 
 class WeatherViewModelFactory(
     private val repository: WeatherRepository,
     private val settingsManager: SettingsManager
 ) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(WeatherViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
             return WeatherViewModel(repository, settingsManager) as T
         }
-        throw IllegalArgumentException("ViewModel inconnu")
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-

@@ -54,4 +54,12 @@ class SettingsManager(context: Context) {
     fun getDouble(key: String, defaultValue: Double): Double {
         return prefs.getFloat(key, defaultValue.toFloat()).toDouble()
     }
+
+    fun saveStringSet(key: String, value: Set<String>) {
+        prefs.edit { putStringSet(key, value) }
+    }
+
+    fun getStringSet(key: String, defaultValue: Set<String>): Set<String> {
+        return prefs.getStringSet(key, defaultValue) ?: defaultValue
+    }
 }

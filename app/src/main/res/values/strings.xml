@@ -91,6 +91,7 @@
     <string name="search_dialog_title">Search City</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_search">Search</string>
+    <string name="favorites_title">Favorites</string>
     <string name="settings_language">Language</string>
     <string name="lang_fr">French</string>
     <string name="lang_en">English</string>

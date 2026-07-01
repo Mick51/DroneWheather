@@ -37,7 +37,8 @@ class SatelliteForecastWorker(
         val useBeidou = settingsManager.getBoolean("useBeidou", false)
 
         // Use a dummy location if we don't have one, or better, use the last cached location
-        val cached = weatherDao.getCachedData()
+        val selectedSource = settingsManager.getString("selectedSource", "OPEN_METEO")
+        val cached = weatherDao.getCachedData(selectedSource)
         val tleList = weatherDao.getAllTleData()
         val lat = cached?.latitude ?: 49.2217
         val lon = cached?.longitude ?: 3.9928

@@ -21,7 +21,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "weather_cache")
 data class WeatherCache(
-    @PrimaryKey val id: Int = 0, // Une seule ligne pour le dernier ÃƒÂ©tat
+    @PrimaryKey val weatherSource: String, // "OPEN_METEO" ou "METEOCIEL"
     val windSpeed: String,
     val wind80m: String = "0",
     val wind120m: String = "0",
@@ -49,7 +49,5 @@ data class WeatherCache(
     val cityName: String,
     val latitude: Double,
     val longitude: Double,
-    val weatherSource: String = "OPEN_METEO",
     val lastUpdated: Long
 )
-
