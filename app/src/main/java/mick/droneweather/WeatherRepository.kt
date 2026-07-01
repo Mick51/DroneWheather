@@ -71,7 +71,8 @@ class WeatherRepository(
         GfzKpSource(gfzApi),
     )
 
-    private val cacheTimeout = 15 * 60 * 1000L // 15 minutes
+    private val cacheTimeout = 15 * 60 * 1000L // 15 minutes for weather
+    private val kpCacheTimeout = 1 * 60 * 1000L // 1 minute for live Kp
     private val weatherMutex = Mutex()
 
     private fun mapWmoToIcon(code: Int?): String {
@@ -96,7 +97,8 @@ class WeatherRepository(
         source: WeatherSource = WeatherSource.OPEN_METEO,
     ): WeatherCache = weatherMutex.withLock {
         val cached = weatherDao.getCachedData(source.name)
-        val isExpired = (cached == null) || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
+        val isExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > cacheTimeout)
+        val isKpExpired = cached == null || (System.currentTimeMillis() - cached.lastUpdated > kpCacheTimeout)
 
         val locationChanged = if (lat != null && lon != null && cached != null) {
             val dist = FloatArray(1)
@@ -104,7 +106,8 @@ class WeatherRepository(
             dist[0] > 100 
         } else false
         
-        if (!force && !isExpired && !locationChanged) {
+        // If weather is fresh, we might still want fresh Kp
+        if (!force && !isExpired && !locationChanged && !isKpExpired) {
             Log.d("WeatherRepository", "Cache OK for ${source.name}")
             return@withLock cached
         }
@@ -135,13 +138,13 @@ class WeatherRepository(
                             weatherApi.getMeteoFranceForecast(
                                 lat = targetLat, 
                                 lon = targetLon, 
-                                timezone = deviceTimeZoneId,
+                                timezone = deviceTimeZoneId
                             )
                         } else {
                             weatherApi.getForecast(
                                 lat = targetLat, 
                                 lon = targetLon,
-                                timezone = deviceTimeZoneId,
+                                timezone = deviceTimeZoneId
                             )
                         }
                     } catch (_: Exception) {
@@ -242,7 +245,7 @@ class WeatherRepository(
                         "kp" to newKpValue.toString(), 
                         "icon" to newWeatherIcon,
                         "isNow" to true,
-                    ),
+                    )
                 )
 
                 hourly?.time?.forEachIndexed { i, ts ->
@@ -344,9 +347,8 @@ class WeatherRepository(
             }
         }
 
-        // 1. Try NOAA 3-day forecast with Linear Interpolation for Hourly Precision
+        // 1. Try NOAA 3-day forecast with Linear Interpolation
         kpForecast?.takeIf { it.isNotEmpty() }?.let { list ->
-            // Find the two points surrounding our timestamp
             val sortedList = list.map { it to parseNoaaTime(it.timeTag) }
                 .filter { it.second != 0L }
                 .sortedBy { it.second }
@@ -354,40 +356,37 @@ class WeatherRepository(
             val before = sortedList.lastOrNull { it.second <= timestamp }
             val after = sortedList.firstOrNull { it.second > timestamp }
 
-            if (before != null) {
-                if (after != null) {
-                    val timeDiff = (after.second - before.second).toDouble()
-                    val progress = (timestamp - before.second) / timeDiff
-                    val kpDiff = after.first.effectiveKp - before.first.effectiveKp
-                    val interpolatedKp = before.first.effectiveKp + (progress * kpDiff)
-                    return String.format(Locale.US, "%.1f", interpolatedKp)
-                }
-                return String.format(Locale.US, "%.1f", before.first.effectiveKp)
+            // Important: only interpolate if we are WITHIN the 3-day range (after is not null)
+            if (before != null && after != null) {
+                val timeDiff = (after.second - before.second).toDouble()
+                val progress = (timestamp - before.second) / timeDiff
+                val kpDiff = after.first.effectiveKp - before.first.effectiveKp
+                val interpolatedKp = before.first.effectiveKp + (progress * kpDiff)
+                return String.format(Locale.US, "%.1f", interpolatedKp)
             }
+            // If after is null, we are past the 3-day detailed range. 
+            // DON'T return before.kp, continue to fallback below.
         }
         
-        // 2. Fallback to NOAA 27-day outlook (with slight smoothing between days)
+        // 2. Fallback to NOAA 27-day outlook (with smooth hourly interpolation)
         kp27Day?.let { outlook ->
             val date = Date(timestamp * 1000)
             val currentKp = extractKpFromOutlook(outlook, date) ?: 2.0
             
-            // For a smoother transition at midnight, look at the next day
+            // For a continuous curve, we interpolate between today and tomorrow
             val tomorrow = Date((timestamp + 86400) * 1000)
-            val nextKp = extractKpFromOutlook(outlook, tomorrow)
+            val nextKp = extractKpFromOutlook(outlook, tomorrow) ?: currentKp
             
-            if (nextKp != null && nextKp != currentKp) {
-                // Calculate progress through the current day (UTC)
-                val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = timestamp * 1000 }
-                val hourOfDay = cal[Calendar.HOUR_OF_DAY]
-                // Smooth transition starting from 6 PM
-                if (hourOfDay >= 18) {
-                    val progress = (hourOfDay - 18) / 6.0 // 0.0 to 1.0 over the last 6 hours
-                    val smoothedKp = currentKp + (progress * (nextKp - currentKp))
-                    return String.format(Locale.US, "%.1f", smoothedKp)
-                }
-            }
+            val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = timestamp * 1000 }
+            val hourOfDay = cal[Calendar.HOUR_OF_DAY]
+            val minuteOfHour = cal[Calendar.MINUTE]
             
-            return String.format(Locale.US, "%.1f", currentKp)
+            // Calculate progress through the day (0.0 to 1.0)
+            val dayProgress = (hourOfDay * 60 + minuteOfHour) / 1440.0
+            
+            // Linear interpolation between the daily predicted values
+            val smoothedKp = currentKp + (dayProgress * (nextKp - currentKp))
+            return String.format(Locale.US, "%.1f", smoothedKp)
         }
 
         return "2.0"

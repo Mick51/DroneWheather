@@ -38,6 +38,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.minutes
 
 data class HourlyForecast(
     val timestamp: Long,
@@ -184,6 +185,7 @@ class WeatherViewModel(
 
     private var isCalculatingSatellites = false
     private var refreshJob: Job? = null
+    private var kpAutoRefreshJob: Job? = null
 
     init {
         loadCachedData()
@@ -191,6 +193,23 @@ class WeatherViewModel(
         viewModelScope.launch {
             val lastCity = settingsManager.getString("lastSearchedCity", "Bezannes")
             refresh(city = lastCity) 
+            startKpAutoRefresh()
+        }
+    }
+
+    private fun startKpAutoRefresh() {
+        kpAutoRefreshJob?.cancel()
+        kpAutoRefreshJob = viewModelScope.launch {
+            while (isActive) {
+                // Auto-refresh Kp every 2 minutes
+                delay(2.minutes)
+                val currentState = _uiState.value
+                if (currentState.cityNameState.isNotBlank()) {
+                    Log.d("WeatherViewModel", "Auto-refreshing Kp data independently...")
+                    // refresh() uses the repository which now has a 1-min specific cache for Kp
+                    refresh(currentState.cityNameState, source = currentState.selectedSource)
+                }
+            }
         }
     }
 
