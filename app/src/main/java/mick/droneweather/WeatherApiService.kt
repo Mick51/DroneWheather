@@ -85,6 +85,14 @@ data class GeocodingResult(
     val country: String?
 )
 
+data class IpLocationResponse(
+    val status: String,
+    val city: String?,
+    val lat: Double?,
+    val lon: Double?,
+    val message: String?
+)
+
 // --- Existing Solar/Kp Models ---
 
 data class KpEntry(
@@ -193,4 +201,9 @@ interface GitHubApiService {
     @Headers("User-Agent: DroneWeather-App")
     @GET("repos/Mick51/DroneWheather/releases/latest")
     suspend fun getLatestRelease(): GitHubRelease
+}
+
+interface IpLocationApiService {
+    @GET("json/")
+    suspend fun getLocation(): IpLocationResponse
 }

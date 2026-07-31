@@ -17,6 +17,7 @@
 package mick.droneweather
 
 import android.content.Context
+import android.hardware.GeomagneticField
 import android.location.Location
 import android.util.Log
 import androidx.compose.ui.graphics.Color
@@ -119,6 +120,7 @@ data class WeatherUiState(
     val visibility: String = ">10",
     val weatherIcon: String? = null,
     val precip: Int = 0,
+    val magneticDeclination: Float = 0f,
 
     // Stats Satellites calculÃ©es
     val forecastSats: Int = 0,
@@ -356,6 +358,15 @@ class WeatherViewModel(
         }
         
         val now = System.currentTimeMillis() / 1000
+        val declination = if (data.latitude != 0.0 || data.longitude != 0.0) {
+            GeomagneticField(
+                data.latitude.toFloat(),
+                data.longitude.toFloat(),
+                0f,
+                System.currentTimeMillis()
+            ).declination
+        } else 0f
+
         val (isSafe, statusResId, statusColor) = calculateSafetyStatus(
             data.windSpeed, data.windGust, data.kpValue, data.currentBz, data.precip, data.temperature
         )
@@ -376,6 +387,7 @@ class WeatherViewModel(
                 sunrise = data.sunrise,
                 sunset = data.sunset,
                 cityNameState = data.cityName,
+                magneticDeclination = declination,
                 mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else state.mapCenter,
                 isLoading = false,
                 lastUpdate = data.lastUpdated,
@@ -517,8 +529,6 @@ class WeatherViewModel(
     fun updateLocationAndData(context: Context, force: Boolean = false, useGpsExplicitly: Boolean = false) {
         val currentState = _uiState.value
         
-        // Si on n'a pas demandé explicitement le GPS et qu'on a déjà une ville (autre que "Position actuelle"),
-        // on rafraîchit la ville actuelle.
         if (force && !useGpsExplicitly && currentState.cityNameState.isNotBlank() && currentState.cityNameState != "Position actuelle") {
             refresh(city = currentState.cityNameState, force = true)
             return
@@ -526,20 +536,63 @@ class WeatherViewModel(
 
         _uiState.update { it.copy(isLoading = true) }
         val locationClient = LocationServices.getFusedLocationProviderClient(context)
+        
         try {
+            // 1. Try Fresh Location (WiFi/Cell preferred via BALANCED)
             locationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
                 .addOnSuccessListener { location ->
                     if (location != null) {
                         processLocation(context, location, force)
                     } else {
-                        refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+                        // 2. Fallback to Last Known Location
+                        tryLastKnownLocation(context, locationClient, force)
                     }
                 }
                 .addOnFailureListener {
-                    refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+                    // 2. Fallback to Last Known Location
+                    tryLastKnownLocation(context, locationClient, force)
                 }
         } catch (_: SecurityException) {
-            refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+            fallbackToIpLocation(force)
+        }
+    }
+
+    private fun tryLastKnownLocation(context: Context, client: com.google.android.gms.location.FusedLocationProviderClient, force: Boolean) {
+        try {
+            client.lastLocation
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        processLocation(context, location, force)
+                    } else {
+                        // 3. Final Fallback: IP-based Location
+                        fallbackToIpLocation(force)
+                    }
+                }
+                .addOnFailureListener {
+                    fallbackToIpLocation(force)
+                }
+        } catch (_: SecurityException) {
+            fallbackToIpLocation(force)
+        }
+    }
+
+    private fun fallbackToIpLocation(force: Boolean) {
+        viewModelScope.launch {
+            try {
+                Log.d("WeatherViewModel", "FusedLocation failed. Trying IP-based location...")
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitInstance.ipLocationApi.getLocation()
+                }
+                if (response.status == "success" && response.lat != null && response.lon != null) {
+                    val city = response.city ?: "Position estimée"
+                    refresh(city, response.lat, response.lon, force)
+                } else {
+                    refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+                }
+            } catch (e: Exception) {
+                Log.e("WeatherViewModel", "IP Location failed: ${e.message}")
+                refresh(city = _uiState.value.cityNameState.ifEmpty { "Bezannes" }, force = force)
+            }
         }
     }
 

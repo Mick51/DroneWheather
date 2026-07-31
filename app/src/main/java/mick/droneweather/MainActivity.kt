@@ -198,7 +198,7 @@ fun WindDirectionIndicator(
             contentDescription = "Direction",
             tint = Color.Black,
             modifier = Modifier
-                .rotate(degrees.toFloat())
+                .rotate(degrees.toFloat() + 180f)
                 .size(size)
         )
     }
@@ -905,7 +905,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                         Column(modifier = Modifier.fillMaxSize().padding(2.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = stringResource(R.string.metric_wind_dir), style = MaterialTheme.typography.labelSmall, color = Color.Black.copy(alpha = 0.6f), maxLines = 1)
                             WindDirectionIndicator(degrees = uiState.windDeg, size = 18.dp)
-                            Text(text = "${getCardinalDirection(uiState.windDeg)} ${uiState.windDeg}\u00B0", style = MaterialTheme.typography.labelSmall, color = Color.Black, maxLines = 1)
+                            Text(text = "${getCardinalDirection(uiState.windDeg)} (${uiState.windDeg}\u00B0)", style = MaterialTheme.typography.labelSmall, color = Color.Black, maxLines = 1)
                         }
                     }
                 }
@@ -953,7 +953,7 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                         Column(modifier = Modifier.fillMaxSize().padding(4.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = stringResource(R.string.metric_wind_dir), style = MaterialTheme.typography.labelMedium, color = Color.Black.copy(alpha = 0.6f), maxLines = 1)
                             WindDirectionIndicator(degrees = uiState.windDeg)
-                            Text(text = "${getCardinalDirection(uiState.windDeg)} ${uiState.windDeg}\u00B0", style = MaterialTheme.typography.labelMedium, color = Color.Black, maxLines = 1)
+                            Text(text = "${getCardinalDirection(uiState.windDeg)} (${uiState.windDeg}\u00B0)", style = MaterialTheme.typography.labelMedium, color = Color.Black, maxLines = 1)
                         }
                     }
                     MetricCard(title = stringResource(R.string.metric_precip), value = "${uiState.precip}%", backgroundColor = viewModel.getCardColor("Precip", uiState.precip, uiState), modifier = Modifier.weight(1f), onClick = { detailTitle = context.getString(R.string.metric_precip); detailDesc = context.getString(R.string.desc_precip); showDetail = true })
@@ -1369,6 +1369,7 @@ fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
             Text(stringResource(R.string.header_wind), modifier = Modifier.weight(1f), style = headerStyle, textAlign = TextAlign.Center)
             Text(stringResource(R.string.header_gusts), modifier = Modifier.weight(1f), style = headerStyle, textAlign = TextAlign.Center)
             Text(stringResource(R.string.header_kp), modifier = Modifier.weight(1f), style = headerStyle, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.header_direction), modifier = Modifier.weight(1f), style = headerStyle, textAlign = TextAlign.Center)
             Text(stringResource(R.string.header_rain), modifier = Modifier.weight(1f), style = headerStyle, textAlign = TextAlign.Center)
         }
 
@@ -1416,6 +1417,17 @@ fun ForecastTable(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         TableCell(text = formatWindSpeed(hour.wind, uiState.windUnit), color = viewModel.getCardColor("Vent", hour.wind, uiState), modifier = Modifier.weight(1f))
                         TableCell(text = formatWindSpeed(hour.gusts, uiState.windUnit), color = viewModel.getCardColor("Gusts", hour.gusts, uiState), modifier = Modifier.weight(1f))
                         TableCell(text = hour.kp, color = viewModel.getCardColor("Kp", hour.kp.toDoubleOrNull(), uiState), modifier = Modifier.weight(1f))
+                        Surface(
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            color = Color.White.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(10.dp).rotate(hour.windDeg.toFloat() + 180f), tint = Color.White)
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(getCardinalDirection(hour.windDeg), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                         TableCell(text = "${hour.precip}%", color = viewModel.getCardColor("Precip", hour.precip, uiState), modifier = Modifier.weight(1f))
                     }
                 }
@@ -1498,12 +1510,20 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                         Text(alt, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
                         Text("${formatWindSpeed(speed, uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
                         Text("${formatWindSpeed((speedInt * 1.3).toInt().toString(), uiState.windUnit)} ${getWindUnitLabel(uiState.windUnit)}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
-                        Icon(
-                            Icons.Default.ArrowUpward,
-                            contentDescription = null, 
-                            modifier = Modifier.weight(1f).size(if (isLandscape) 14.dp else 16.dp).rotate(uiState.windDeg.toFloat()),
-                            tint = Color.Black
-                        )
+                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.ArrowUpward,
+                                contentDescription = null,
+                                modifier = Modifier.size(if (isLandscape) 14.dp else 16.dp).rotate(uiState.windDeg.toFloat() + 180f),
+                                tint = Color.Black
+                            )
+                            Text(
+                                text = getCardinalDirection(uiState.windDeg),
+                                style = if (isLandscape) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Text("${formatTemperature(uiState.temperature, uiState.temperatureUnit)} ${getTemperatureLabel(uiState.temperatureUnit)}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color.Black, style = textStyle)
                     }
                     HorizontalDivider(color = Color.Black.copy(alpha = 0.1f), thickness = 0.5.dp)
@@ -1563,8 +1583,8 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
     
     // L'angle de l'aiguille bleue (vent) par rapport au téléphone
     // L'icône Navigation pointe vers le haut (0°), 
-    // On montre d'où vient le vent (Source).
-    val relativeWindAngle = windDeg - deviceAzimuth
+    // On montre où va le vent (Destination).
+    val relativeWindAngle = windDeg - deviceAzimuth + 180f
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Location & Stats
@@ -1678,8 +1698,12 @@ fun WindCompassScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                BadgeInfo("MAG: ${uiState.windDeg}\u00B0", Color(0xFF00B0FF).copy(alpha = 0.2f), Color(0xFF00B0FF))
-                BadgeInfo("TRUE: ${uiState.windDeg}\u00B0", Color(0xFF4CAF50).copy(alpha = 0.2f), Color(0xFF4CAF50))
+                val magWindDeg = (uiState.windDeg - uiState.magneticDeclination + 360) % 360
+                val magCardinal = getCardinalDirection(magWindDeg.roundToInt())
+                val trueCardinal = getCardinalDirection(uiState.windDeg)
+                
+                BadgeInfo("MAG: $magCardinal ${String.format(Locale.US, "%.1f", magWindDeg)}\u00B0", Color(0xFF00B0FF).copy(alpha = 0.2f), Color(0xFF00B0FF))
+                BadgeInfo("TRUE: $trueCardinal ${uiState.windDeg}\u00B0", Color(0xFF4CAF50).copy(alpha = 0.2f), Color(0xFF4CAF50))
             }
         }
 
