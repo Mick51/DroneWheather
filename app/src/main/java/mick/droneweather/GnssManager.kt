@@ -29,7 +29,7 @@ class GnssManager(private val context: Context) {
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private var gnssStatusCallback: GnssStatus.Callback? = null
     
-    // Un LocationListener est nÃƒÂ©cessaire pour "rÃƒÂ©veiller" le GPS sur certains appareils
+    // Un LocationListener est nécessaire pour "réveiller" le GPS sur certains appareils
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: android.location.Location) {}
         @Deprecated("Deprecated in Java")
@@ -57,7 +57,7 @@ class GnssManager(private val context: Context) {
                 
                 for (i in 0 until totalCount) {
                     val constellation = status.getConstellationType(i)
-                    // Filtrer selon les paramÃƒÂ¨tres utilisateur
+                    // Filtrer selon les paramètres utilisateur
                     val isTargetConstellation = when (constellation) {
                         GnssStatus.CONSTELLATION_GPS -> useGps
                         GnssStatus.CONSTELLATION_GLONASS -> useGlonass
@@ -89,7 +89,7 @@ class GnssManager(private val context: Context) {
                 locationManager.registerGnssStatusCallback(gnssStatusCallback!!)
             }
             
-            // Demander des mises ÃƒÂ  jour de localisation lÃƒÂ©gÃƒÂ¨res pour forcer l'activation du GNSS
+            // Demander des mises à jour de localisation légères pour forcer l'activation du GNSS
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 1000L, // 1 seconde

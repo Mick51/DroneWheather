@@ -49,7 +49,7 @@ class UpdateManager(private val context: Context) {
                 
                 Log.d("UpdateManager", "DEBUG_UPDATE: Fallback semantic: GitHub=$tagClean, Local=$localClean")
                 
-                if (tagClean != localClean && tagClean > localClean) {
+                if (isVersionNewer(tagClean, localClean)) {
                     Log.d("UpdateManager", "DEBUG_UPDATE: New version found (Semantic)")
                     latest
                 } else {
@@ -61,6 +61,18 @@ class UpdateManager(private val context: Context) {
                 null
             }
         }
+    }
+
+    private fun isVersionNewer(latest: String, current: String): Boolean {
+        val latestParts = latest.split(".").mapNotNull { it.toIntOrNull() }
+        val currentParts = current.split(".").mapNotNull { it.toIntOrNull() }
+        val length = maxOf(latestParts.size, currentParts.size)
+        for (i in 0 until length) {
+            val l = latestParts.getOrElse(i) { 0 }
+            val c = currentParts.getOrElse(i) { 0 }
+            if (l != c) return l > c
+        }
+        return false
     }
 
     suspend fun downloadAndInstall(release: GitHubRelease, onProgress: (Float) -> Unit) {

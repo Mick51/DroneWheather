@@ -25,7 +25,6 @@ import org.orekit.time.AbsoluteDate
 import org.orekit.time.TimeScalesFactory
 import org.orekit.utils.Constants
 import org.orekit.utils.IERSConventions
-import java.util.*
 import org.orekit.bodies.GeodeticPoint
 
 class SatellitePredictor {
@@ -60,8 +59,23 @@ class SatellitePredictor {
         val utc = TimeScalesFactory.getUTC()
         val gcrf = FramesFactory.getGCRF()
 
+        val activeCount = (if(useGps) 1 else 0) + (if(useGlonass) 1 else 0) + (if(useGalileo) 1 else 0) + (if(useBeidou) 1 else 0)
+        val maxVisible = when(activeCount) { 4 -> 38; 3 -> 28; 2 -> 18; else -> 12 }
+        val maxLocked = when(activeCount) { 4 -> 30; 3 -> 24; 2 -> 15; else -> 8 }
+
+        val filteredTleList = tleList.filter { tleData ->
+            val name = tleData.satelliteName.uppercase()
+            when {
+                name.contains("GPS") -> useGps
+                name.contains("COSMOS") || name.contains("GLONASS") -> useGlonass
+                name.contains("GALILEO") -> useGalileo
+                name.contains("BEIDOU") || name.contains("BDS") -> useBeidou
+                else -> true
+            }
+        }
+
         // Pre-create propagators to avoid heavy object creation in the loop
-        val propagators = tleList.mapNotNull { tleData ->
+        val propagators = filteredTleList.mapNotNull { tleData ->
             try {
                 val tle = TLE(tleData.line1, tleData.line2)
                 TLEPropagator.selectExtrapolator(tle)
@@ -79,13 +93,9 @@ class SatellitePredictor {
             else -> 0.95f
         }
 
-        val activeCount = (if(useGps) 1 else 0) + (if(useGlonass) 1 else 0) + (if(useGalileo) 1 else 0) + (if(useBeidou) 1 else 0)
-        val maxVisible = when(activeCount) { 4 -> 38; 3 -> 28; 2 -> 18; else -> 12 }
-        val maxLocked = when(activeCount) { 4 -> 30; 3 -> 24; 2 -> 15; else -> 8 }
-
         for (i in 0 until points) {
             val targetTime = now + (i * step)
-            val date = AbsoluteDate(Date(targetTime * 1000), utc)
+            val date = AbsoluteDate(AbsoluteDate.JAVA_EPOCH, targetTime.toDouble(), utc)
             
             var visible = 0
             var locked = 0

@@ -44,6 +44,12 @@ class SatelliteForecastWorker(
         val lon = cached?.longitude ?: 3.9928
         val kp = cached?.kpValue?.toFloat() ?: 0f
 
+        // Wait for Orekit initialization before starting calculation
+        if (!OrekitInitializer.isInitialized) {
+            OrekitInitializer.init(applicationContext)
+        }
+        OrekitInitializer.waitUntilInitialized()
+
         return try {
             val predictor = SatellitePredictor()
             val forecasts = predictor.generateMultiDayForecast(

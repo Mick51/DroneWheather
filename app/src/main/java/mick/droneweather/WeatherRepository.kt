@@ -180,6 +180,8 @@ class WeatherRepository(
                 val kpForecastRaw = kpForecastDeferred.await()
                 val kp27DayRaw = try { kp27DayDeferred.await()?.string() } catch(_: Exception) { null }
 
+                val parsed27DayOutlook = parse27DayOutlook(kp27DayRaw)
+
                 // Solar Wind processing (Robust)
                 val lastMag = magList.lastOrNull { it.firstOrNull()?.toString()?.contains(":") == true }
                 val bzIdx = magList.firstOrNull()?.indexOf("bz_gsm")?.takeIf { it != -1 } ?: 4
@@ -251,7 +253,7 @@ class WeatherRepository(
                 hourly?.time?.forEachIndexed { i, ts ->
                     if (ts < (System.currentTimeMillis() / 1000) - 3600) return@forEachIndexed
                     
-                    val kpForTime = findKpForTime(ts, kpForecastRaw, kp27DayRaw)
+                    val kpForTime = findKpForTime(ts, kpForecastRaw, parsed27DayOutlook)
                     val hVis = hourly.visibility?.getOrNull(i) ?: 10000.0
                     val vKm = (hVis / 1000).toInt()
                     val vStr = if (vKm >= 10) ">10" else vKm.toString()
@@ -334,7 +336,7 @@ class WeatherRepository(
         weatherDao.clearTleData()
     }
 
-    private fun findKpForTime(timestamp: Long, kpForecast: List<KpEntry>?, kp27Day: String?): String {
+    private fun findKpForTime(timestamp: Long, kpForecast: List<KpEntry>?, parsed27DayOutlook: Map<String, Double>): String {
         fun parseNoaaTime(tag: String): Long {
             return try {
                 val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
@@ -369,13 +371,13 @@ class WeatherRepository(
         }
         
         // 2. Fallback to NOAA 27-day outlook (with smooth hourly interpolation)
-        kp27Day?.let { outlook ->
-            val date = Date(timestamp * 1000)
-            val currentKp = extractKpFromOutlook(outlook, date) ?: 2.0
-            
-            // For a continuous curve, we interpolate between today and tomorrow
-            val tomorrow = Date((timestamp + 86400) * 1000)
-            val nextKp = extractKpFromOutlook(outlook, tomorrow) ?: currentKp
+        if (parsed27DayOutlook.isNotEmpty()) {
+            val sdfSearch = SimpleDateFormat("yyyy MMM dd", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+            val dateStr = sdfSearch.format(Date(timestamp * 1000)).uppercase()
+            val tomorrowStr = sdfSearch.format(Date((timestamp + 86400) * 1000)).uppercase()
+
+            val currentKp = parsed27DayOutlook[dateStr] ?: 2.0
+            val nextKp = parsed27DayOutlook[tomorrowStr] ?: currentKp
             
             val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = timestamp * 1000 }
             val hourOfDay = cal[Calendar.HOUR_OF_DAY]
@@ -392,37 +394,41 @@ class WeatherRepository(
         return "2.0"
     }
 
-    private fun extractKpFromOutlook(outlook: String, date: Date): Double? {
+    private fun parse27DayOutlook(outlook: String?): Map<String, Double> {
+        if (outlook.isNullOrBlank()) return emptyMap()
+        val result = mutableMapOf<String, Double>()
         try {
-            val lines = outlook.lines()
-            val sdfSearch = SimpleDateFormat("yyyy MMM dd", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
-            val searchStr = sdfSearch.format(date).uppercase()
-            
-            for (line in lines) {
-                val upperLine = line.uppercase().trim()
-                if (upperLine.contains(searchStr)) {
-                    val parts = line.split("\\s+".toRegex()).filter { it.isNotBlank() }
-                    if (parts.size >= 4) {
-                        val kpValue = if (parts.size >= 6) {
-                            parts[5].toDoubleOrNull()
-                        } else {
-                            parts.lastOrNull()?.toDoubleOrNull()
-                        }
+            outlook.lineSequence()
+                .filter { it.isNotBlank() }
+                .forEach { line ->
+                    val upperLine = line.uppercase().trim()
+                    // Fast check to see if the line might contain a date (e.g., "2026", "JAN")
+                    if (upperLine.length > 10 && upperLine.substring(0, 4).toIntOrNull() != null) {
+                        // Avoid compiling regex per line, use simple split by spaces
+                        val parts = upperLine.split(' ').filter { it.isNotEmpty() }
+                        if (parts.size >= 4) {
+                            val dateStr = "${parts[0]} ${parts[1]} ${parts[2]}"
+                            val kpValue = if (parts.size >= 6) {
+                                parts[5].toDoubleOrNull()
+                            } else {
+                                parts.lastOrNull()?.toDoubleOrNull()
+                            }
 
-                        if (kpValue != null && kpValue in 0.0..9.0) {
-                            return kpValue
-                        } else {
-                            for (i in parts.indices.reversed()) {
-                                val v = parts[i].toDoubleOrNull()
-                                if (v != null && v in 0.0..9.0) {
-                                    return v
+                            if (kpValue != null && kpValue in 0.0..9.0) {
+                                result[dateStr] = kpValue
+                            } else {
+                                for (i in parts.indices.reversed()) {
+                                    val v = parts[i].toDoubleOrNull()
+                                    if (v != null && v in 0.0..9.0) {
+                                        result[dateStr] = v
+                                        break
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
         } catch (_: Exception) {}
-        return null
+        return result
     }
 }

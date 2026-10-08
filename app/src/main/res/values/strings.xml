@@ -21,6 +21,7 @@
     <string name="metric_weather">Weather</string>
     <string name="status_ready">READY TO FLY</string>
     <string name="status_winds_danger">DANGEROUS WINDS</string>
+    <string name="status_temp_danger">DANGEROUS TEMPERATURE</string>
     <string name="status_precip_danger">PRECIPITATION DANGER</string>
     <string name="status_kp_danger">CRITICAL KP - GPS DANGER</string>
     <string name="status_kp_warn">MODERATE KP - GPS ADVISORY</string>

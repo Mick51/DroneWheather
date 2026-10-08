@@ -21,9 +21,9 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "satellite_forecast")
 data class SatelliteForecast(
-    @PrimaryKey val timestamp: Long, // Temps de la prÃƒÂ©diction
-    val availableSatellites: Int,     // PrÃƒÂ©diction satellites en vue
-    val lockedSatellites: Int,       // PrÃƒÂ©diction satellites verrouillables (avec Kp)
+    @PrimaryKey val timestamp: Long, // Temps de la prédiction
+    val availableSatellites: Int,     // Prédiction satellites en vue
+    val lockedSatellites: Int,       // Prédiction satellites verrouillables (avec Kp)
     val kpIndex: Float
 )
 

@@ -35,16 +35,49 @@ class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineW
             connection.connectTimeout = 15000
             connection.readTimeout = 15000
             
-            val tleContent = connection.inputStream.bufferedReader().use { it.readText() }
-            
-            // 2. Parse and FILTER operational satellites
-            val satelliteList = parseTleData(tleContent)
+            val tleList = mutableListOf<TleData>()
+            val now = System.currentTimeMillis()
+            var currentName = ""
+            var currentL1 = ""
+
+            connection.inputStream.bufferedReader().useLines { lines ->
+                for (line in lines) {
+                    val trimmed = line.trim()
+                    if (trimmed.isEmpty()) continue
+
+                    if (!trimmed.startsWith("1 ") && !trimmed.startsWith("2 ")) {
+                        currentName = trimmed.uppercase()
+                    } else if (trimmed.startsWith("1 ")) {
+                        currentL1 = trimmed
+                    } else if (trimmed.startsWith("2 ")) {
+                        if (currentName.isNotEmpty() && currentL1.isNotEmpty()) {
+                            val isOperational = when {
+                                currentName.contains("GPS") && (currentName.contains("PRN") || currentName.contains("BI")) -> true
+                                currentName.contains("COSMOS") || currentName.contains("GLONASS") -> true
+                                currentName.contains("GSAT") || currentName.contains("GALILEO") -> true
+                                currentName.contains("BEIDOU") || currentName.contains("BDS") -> {
+                                    !currentName.contains(" G") && !currentName.contains("IGSO")
+                                }
+                                else -> false
+                            }
+
+                            if (isOperational) {
+                                tleList.add(TleData(currentName, currentL1, trimmed, now))
+                            }
+                            
+                            // Reset state for next satellite
+                            currentName = ""
+                            currentL1 = ""
+                        }
+                    }
+                }
+            }
             
             // 3. Save to Room
             val db = AppDatabase.getDatabase(applicationContext)
             val dao = db.weatherDao()
             dao.clearTleData() // Clear old data to apply the new strict filters
-            dao.insertTleData(satelliteList)
+            dao.insertTleData(tleList)
             
             // Trigger an immediate satellite forecast update since we have new orbital data
             val forecastRequest = androidx.work.OneTimeWorkRequestBuilder<SatelliteForecastWorker>().build()
@@ -54,45 +87,5 @@ class TleDownloadWorker(context: Context, params: WorkerParameters) : CoroutineW
         } catch (_: Exception) {
             Result.retry()
         }
-    }
-
-    private fun parseTleData(content: String): List<TleData> {
-        val lines = content.lines().filter { it.isNotBlank() }
-        val tleList = mutableListOf<TleData>()
-        val now = System.currentTimeMillis()
-
-        // TLE format: Line 0 (Name), Line 1, Line 2
-        for (i in 0 until lines.size - 2 step 3) {
-            val name = lines[i].trim().uppercase()
-            val l1 = lines[i+1]
-            val l2 = lines[i+2]
-            
-            if (l1.startsWith("1") && l2.startsWith("2")) {
-                // STRICT FILTERING: Only keep operational GPS, GLONASS, Galileo, and BeiDou.
-                // This removes experimental, non-operational, and SBAS (EGNOS/WAAS) 
-                // which drones often exclude from the main 'locked' count.
-                val isOperational = when {
-                    // GPS: PRN 01-32 are operational. TLE name usually includes PRN.
-                    name.contains("GPS") && (name.contains("PRN") || name.contains("BI")) -> true
-                    // GLONASS: Operational satellites
-                    name.contains("COSMOS") || name.contains("GLONASS") -> true
-                    // GALILEO: GSAT series
-                    name.contains("GSAT") || name.contains("GALILEO") -> true
-                    // BEIDOU: BD/BDS series
-                    name.contains("BEIDOU") || name.contains("BDS") -> {
-                        // STRICT FILTER: Drones mainly use MEO satellites (higher PRNs/specific series)
-                        // and ignore GEO/IGSO satellites which are often too low or fixed.
-                        // On CelesTrak, MEOs are typically NOT marked with G or IGSO.
-                        !name.contains(" G") && !name.contains("IGSO")
-                    }
-                    else -> false
-                }
-
-                if (isOperational) {
-                    tleList.add(TleData(name, l1, l2, now))
-                }
-            }
-        }
-        return tleList
     }
 }

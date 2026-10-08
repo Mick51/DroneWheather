@@ -48,10 +48,19 @@ class CompassManager(context: Context) : SensorEventListener {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
             SensorManager.getOrientation(rotationMatrix, orientation)
             
-            val azimuth = Math.toDegrees(orientation[0].toDouble()).toFloat()
+            // 1. Convertir en degrés et normaliser l'azimut initial entre [0°, 360°[
+            // getOrientation retourne typiquement une valeur entre -PI et PI (-180° à 180°)
+            val rawAzimuthDeg = Math.toDegrees(orientation[0].toDouble()).toFloat()
+            val azimuth = (rawAzimuthDeg + 360f) % 360f
             
-            // Low-pass filter to smooth the needle movement
-            val smoothedAzimuth = lastAzimuth + alpha * (azimuth - lastAzimuth)
+            // 2. Calculer la différence et la normaliser dans l'intervalle [-180°, 180°[
+            // pour gérer le passage du Nord (discontinuité 359° <-> 0°)
+            var diff = azimuth - lastAzimuth
+            if (diff > 180f) diff -= 360f
+            if (diff < -180f) diff += 360f
+            
+            // 3. Appliquer le filtre passe-bas et normaliser la valeur lissée entre [0°, 360°[
+            val smoothedAzimuth = (lastAzimuth + alpha * diff + 360f) % 360f
             lastAzimuth = smoothedAzimuth
             
             onAzimuthChanged?.invoke(smoothedAzimuth)
@@ -60,4 +69,3 @@ class CompassManager(context: Context) : SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }
-

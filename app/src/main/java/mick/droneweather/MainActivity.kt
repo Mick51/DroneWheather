@@ -635,15 +635,22 @@ fun DashboardContent(uiState: WeatherUiState, viewModel: WeatherViewModel, conte
                         
                         val unit = uiState.altitudeUnit
                         val label = getAltitudeLabel(unit)
+                        val groundLabel = stringResource(R.string.altitude_ground)
                         
-                        val altitudes = listOf(
-                            stringResource(R.string.altitude_ground) to uiState.windSpeed,
-                            "${formatAltitude(80, unit)}$label" to uiState.wind80m,
-                            "${formatAltitude(120, unit)}$label" to uiState.wind120m,
-                            "${formatAltitude(180, unit)}$label" to uiState.wind180m,
-                            "${formatAltitude(320, unit)}$label" to uiState.wind320m,
-                            "${formatAltitude(500, unit)}$label" to uiState.wind500m
-                        )
+                        val altitudes = remember(
+                            uiState.windSpeed, uiState.wind80m, uiState.wind120m, 
+                            uiState.wind180m, uiState.wind320m, uiState.wind500m,
+                            unit, label, groundLabel
+                        ) {
+                            listOf(
+                                groundLabel to uiState.windSpeed,
+                                "${formatAltitude(80, unit)}$label" to uiState.wind80m,
+                                "${formatAltitude(120, unit)}$label" to uiState.wind120m,
+                                "${formatAltitude(180, unit)}$label" to uiState.wind180m,
+                                "${formatAltitude(320, unit)}$label" to uiState.wind320m,
+                                "${formatAltitude(500, unit)}$label" to uiState.wind500m
+                            )
+                        }
                         
                         altitudes.forEach { (alt, speed) ->
                             val speedVal = speed.toIntOrNull() ?: 0
@@ -1461,18 +1468,25 @@ fun WindProfileScreen(uiState: WeatherUiState, viewModel: WeatherViewModel) {
     
     val unit = uiState.altitudeUnit
     val label = getAltitudeLabel(unit)
+    val groundLabel = stringResource(R.string.altitude_ground)
     
-    val altitudes = listOf(
-        stringResource(R.string.altitude_ground) to uiState.windSpeed,
-        "${formatAltitude(80, unit)}$label" to uiState.wind80m,
-        "${formatAltitude(120, unit)}$label" to uiState.wind120m,
-        "${formatAltitude(180, unit)}$label" to uiState.wind180m,
-        "${formatAltitude(320, unit)}$label" to uiState.wind320m,
-        "${formatAltitude(500, unit)}$label" to uiState.wind500m,
-        "${formatAltitude(800, unit)}$label" to uiState.wind800m,
-        "${formatAltitude(1000, unit)}$label" to uiState.wind1000m,
-        "${formatAltitude(1500, unit)}$label" to uiState.wind1500m
-    )
+    val altitudes = remember(
+        uiState.windSpeed, uiState.wind80m, uiState.wind120m, uiState.wind180m,
+        uiState.wind320m, uiState.wind500m, uiState.wind800m, uiState.wind1000m, uiState.wind1500m,
+        unit, label, groundLabel
+    ) {
+        listOf(
+            groundLabel to uiState.windSpeed,
+            "${formatAltitude(80, unit)}$label" to uiState.wind80m,
+            "${formatAltitude(120, unit)}$label" to uiState.wind120m,
+            "${formatAltitude(180, unit)}$label" to uiState.wind180m,
+            "${formatAltitude(320, unit)}$label" to uiState.wind320m,
+            "${formatAltitude(500, unit)}$label" to uiState.wind500m,
+            "${formatAltitude(800, unit)}$label" to uiState.wind800m,
+            "${formatAltitude(1000, unit)}$label" to uiState.wind1000m,
+            "${formatAltitude(1500, unit)}$label" to uiState.wind1500m
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = if (isLandscape) 8.dp else 0.dp)) {
         // Data Table
@@ -1731,61 +1745,50 @@ fun BadgeInfo(text: String, bgColor: Color, textColor: Color) {
 
 @Composable
 fun SafeZoneMapScreen(uiState: WeatherUiState) {
-    val context = LocalContext.current
-    
-    // 1. Gérer la WebView avec 'remember' pour éviter de la recréer inutilement au sein de l'écran
-    val webView = remember {
-        WebView(context).apply {
-            layoutParams = android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            webViewClient = WebViewClient()
-            webChromeClient = android.webkit.WebChromeClient()
-            
-            @android.annotation.SuppressLint("SetJavaScriptEnabled")
-            settings.apply {
-                javaScriptEnabled = true
-                domStorageEnabled = true
-                loadWithOverviewMode = true
-                useWideViewPort = true
-                setSupportZoom(true)
-                builtInZoomControls = true
-                displayZoomControls = false
-                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                cacheMode = WebSettings.LOAD_DEFAULT
-                userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
-            }
-        }
-    }
-
-    // 2. Cycle de vie : Détruire la WebView proprement quand on quitte l'onglet Map
-    DisposableEffect(webView) {
-        val lon = uiState.mapCenter.longitude
-        val lat = uiState.mapCenter.latitude
-        val url = "https://www.geoportail.gouv.fr/carte?c=$lon,$lat&z=14&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR.CV::GEOPORTAIL:OGC:WMTS(1)&l1=TRANSPORTS.DRONES.RESTRICTIONS::GEOPORTAIL:OGC:WMTS(0.8)&permalink=yes"
-        webView.loadUrl(url)
-        
-        onDispose {
-            webView.stopLoading()
-            webView.loadUrl("about:blank") // Libère les ressources JS
-            webView.clearHistory()
-            webView.removeAllViews()
-            webView.destroy()
-        }
-    }
-
-    // 3. Mise en pause/reprise auto (réduit la charge CPU en arrière-plan)
-    DisposableEffect(Unit) {
-        onDispose {
-            webView.onPause()
-            webView.pauseTimers()
-        }
-    }
+    val lon = uiState.mapCenter.longitude
+    val lat = uiState.mapCenter.latitude
+    val url = "https://www.geoportail.gouv.fr/carte?c=$lon,$lat&z=14&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR.CV::GEOPORTAIL:OGC:WMTS(1)&l1=TRANSPORTS.DRONES.RESTRICTIONS::GEOPORTAIL:OGC:WMTS(0.8)&permalink=yes"
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
-            factory = { webView },
+            factory = { context ->
+                WebView(context).apply {
+                    layoutParams = android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    webViewClient = WebViewClient()
+                    webChromeClient = android.webkit.WebChromeClient()
+                    
+                    @android.annotation.SuppressLint("SetJavaScriptEnabled")
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        loadWithOverviewMode = true
+                        useWideViewPort = true
+                        setSupportZoom(true)
+                        builtInZoomControls = true
+                        displayZoomControls = false
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        cacheMode = WebSettings.LOAD_DEFAULT
+                        userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
+                    }
+                }
+            },
+            update = { webView ->
+                if (webView.url != url) {
+                    webView.loadUrl(url)
+                }
+            },
+            onRelease = { webView ->
+                webView.stopLoading()
+                webView.onPause()
+                webView.pauseTimers()
+                webView.loadUrl("about:blank") // Libère les ressources JS
+                webView.clearHistory()
+                webView.removeAllViews()
+                webView.destroy()
+            },
             modifier = Modifier.fillMaxSize()
         )
     }

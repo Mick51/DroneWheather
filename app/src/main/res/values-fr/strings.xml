@@ -21,6 +21,7 @@
     <string name="metric_weather">Météo</string>
     <string name="status_ready">PRÊT À VOLER</string>
     <string name="status_winds_danger">VENTS DANGEREUX</string>
+    <string name="status_temp_danger">TEMPÉRATURE DANGEREUSE</string>
     <string name="status_precip_danger">DANGER PRÉCIPITATIONS</string>
     <string name="status_kp_danger">KP CRITIQUE - DANGER GPS</string>
     <string name="status_kp_warn">KP MODÉRÉ - ATTENTION GPS</string>

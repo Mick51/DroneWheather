@@ -20,47 +20,67 @@ import android.content.Context
 import android.util.Log
 import org.orekit.data.DataContext
 import org.orekit.data.DirectoryCrawler
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
 object OrekitInitializer {
-    fun init(context: Context) {
-        val dataDir = File(context.filesDir, "orekit-data")
-        if (!dataDir.exists()) {
-            dataDir.mkdirs()
-        }
+    @Volatile
+    var isInitialized = false
+        private set
 
-        // Sentinel check: if tai-utc.dat exists, we assume data is already there
-        if (File(dataDir, "tai-utc.dat").exists() || File(dataDir, "orekit-data-main/tai-utc.dat").exists()) {
-            Log.d("OrekitInit", "Orekit data already initialized, skipping copy.")
-            setupDataProvider(dataDir)
-            return
-        }
+    private val initMutex = Mutex()
 
-        val assetManager = context.assets
-        
-        try {
-            val assetsList = assetManager.list("") ?: emptyArray()
-            Log.d("OrekitInit", "Assets found: ${assetsList.joinToString()}")
+    suspend fun waitUntilInitialized() {
+        if (isInitialized) return
+        initMutex.withLock {
+            // Lock acquis = init terminée
+        }
+    }
+
+    suspend fun init(context: Context) {
+        initMutex.withLock {
+            if (isInitialized) return@withLock
+            val dataDir = File(context.filesDir, "orekit-data")
+            if (!dataDir.exists()) {
+                dataDir.mkdirs()
+            }
+
+            // Sentinel check: if tai-utc.dat exists, we assume data is already there
+            if (File(dataDir, "tai-utc.dat").exists() || File(dataDir, "orekit-data-main/tai-utc.dat").exists()) {
+                Log.d("OrekitInit", "Orekit data already initialized, skipping copy.")
+                setupDataProvider(dataDir)
+                isInitialized = true
+                return@withLock
+            }
+
+            val assetManager = context.assets
             
-            // Always copy individual assets first
-            copyAssetsToInternal(context, "", dataDir)
-            
-            // Then extract zip if present (it might contain more or newer data)
-            if (assetsList.contains("orekit-data.zip")) {
-                extractZip(assetManager.open("orekit-data.zip"), dataDir)
+            try {
+                val assetsList = assetManager.list("") ?: emptyArray()
+                Log.d("OrekitInit", "Assets found: ${assetsList.joinToString()}")
+                
+                // Always copy individual assets first
+                copyAssetsToInternal(context, "", dataDir)
+                
+                // Then extract zip if present (it might contain more or newer data)
+                if (assetsList.contains("orekit-data.zip")) {
+                    extractZip(assetManager.open("orekit-data.zip"), dataDir)
+                }
+                
+                // Log what was copied
+                val files = dataDir.listFiles()
+                Log.d("OrekitInit", "Internal files after init: ${files?.map { it.name }?.joinToString()}")
+            } catch (e: Exception) {
+                Log.e("OrekitInit", "Error during initialization", e)
             }
             
-            // Log what was copied
-            val files = dataDir.listFiles()
-            Log.d("OrekitInit", "Internal files after init: ${files?.map { it.name }?.joinToString()}")
-        } catch (e: Exception) {
-            Log.e("OrekitInit", "Error during initialization", e)
+            setupDataProvider(dataDir)
+            isInitialized = true
         }
-        
-        setupDataProvider(dataDir)
     }
 
     private fun setupDataProvider(dataDir: File) {

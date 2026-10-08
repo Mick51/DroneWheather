@@ -185,7 +185,7 @@ class WeatherViewModel(
     private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
-    private var isCalculatingSatellites = false
+    private var satelliteCalculationJob: Job? = null
     private var refreshJob: Job? = null
     private var kpAutoRefreshJob: Job? = null
 
@@ -358,7 +358,7 @@ class WeatherViewModel(
         }
         
         val now = System.currentTimeMillis() / 1000
-        val declination = if (data.latitude != 0.0 || data.longitude != 0.0) {
+        val baseDeclination = if (data.latitude != 0.0 || data.longitude != 0.0) {
             GeomagneticField(
                 data.latitude.toFloat(),
                 data.longitude.toFloat(),
@@ -387,7 +387,7 @@ class WeatherViewModel(
                 sunrise = data.sunrise,
                 sunset = data.sunset,
                 cityNameState = data.cityName,
-                magneticDeclination = declination,
+                magneticDeclination = baseDeclination,
                 mapCenter = if (lat != null && lon != null) GeoPoint(lat, lon) else state.mapCenter,
                 isLoading = false,
                 lastUpdate = data.lastUpdated,
@@ -398,6 +398,16 @@ class WeatherViewModel(
                 val idx = updatedState.selectedIndex
                 if (forecast.isNotEmpty() && idx in forecast.indices) {
                     val selected = forecast[idx]
+                    
+                    val timeSpecificDeclination = if (data.latitude != 0.0 || data.longitude != 0.0) {
+                        GeomagneticField(
+                            data.latitude.toFloat(),
+                            data.longitude.toFloat(),
+                            0f,
+                            selected.timestamp * 1000L
+                        ).declination
+                    } else baseDeclination
+
                     val satForecast = updatedState.satelliteForecast.minByOrNull { 
                         abs(it.timestamp - selected.timestamp) 
                     }
@@ -431,6 +441,7 @@ class WeatherViewModel(
                         visibility = selected.visibility,
                         weatherIcon = selected.weatherIcon,
                         precip = selected.precip,
+                        magneticDeclination = timeSpecificDeclination,
                         forecastSats = satForecast?.availableSatellites ?: updatedState.forecastSats,
                         forecastSatsLocked = satForecast?.lockedSatellites ?: updatedState.forecastSatsLocked,
                         isSafe = safety,
@@ -495,6 +506,15 @@ class WeatherViewModel(
                 val (safety, resId, color) = calculateSafetyStatus(
                     item.wind, item.gusts, kpValueToUse, state.currentBz, item.precip, item.temp
                 )
+                
+                val timeSpecificDeclination = if (state.mapCenter.latitude != 0.0 || state.mapCenter.longitude != 0.0) {
+                    GeomagneticField(
+                        state.mapCenter.latitude.toFloat(),
+                        state.mapCenter.longitude.toFloat(),
+                        0f,
+                        item.timestamp * 1000L
+                    ).declination
+                } else state.magneticDeclination
 
                 state.copy(
                     selectedIndex = index,
@@ -516,6 +536,7 @@ class WeatherViewModel(
                     visibility = item.visibility,
                     weatherIcon = item.weatherIcon,
                     precip = item.precip,
+                    magneticDeclination = timeSpecificDeclination,
                     forecastSats = satForecast?.availableSatellites ?: 0,
                     forecastSatsLocked = satForecast?.lockedSatellites ?: 0,
                     isSafe = safety,
@@ -874,7 +895,7 @@ class WeatherViewModel(
         val statusResId = when {
             isPrecipDanger -> R.string.status_precip_danger
             isWindDanger -> R.string.status_winds_danger
-            isTempDanger -> R.string.status_winds_danger
+            isTempDanger -> R.string.status_temp_danger
             currentKp >= 5.0 -> R.string.status_kp_danger
             currentKp >= 3.0 -> R.string.status_kp_warn
             currentBz <= -10.0 -> R.string.status_bz_danger
@@ -886,11 +907,12 @@ class WeatherViewModel(
     }
 
     private fun triggerSatelliteRecalculation(lat: Double, lon: Double) {
-        if (lat == 0.0 && lon == 0.0 || isCalculatingSatellites) return
+        if (lat == 0.0 && lon == 0.0) return
 
-        isCalculatingSatellites = true
-        viewModelScope.launch(Dispatchers.Default) {
+        satelliteCalculationJob?.cancel()
+        satelliteCalculationJob = viewModelScope.launch(Dispatchers.Default) {
             try {
+                OrekitInitializer.waitUntilInitialized()
                 val allTle = repository.getAllTleData()
                 
                 if (allTle.isEmpty()) {
@@ -901,22 +923,13 @@ class WeatherViewModel(
                 val predictor = SatellitePredictor()
                 val currentState = _uiState.value
                 
-                val filteredTle = allTle.filter { tle ->
-                    val name = tle.satelliteName.uppercase()
-                    when {
-                        name.contains("GPS") -> currentState.useGps
-                        name.contains("COSMOS") || name.contains("GLONASS") -> currentState.useGlonass
-                        name.contains("GALILEO") -> currentState.useGalileo
-                        name.contains("BEIDOU") || name.contains("BDS") -> currentState.useBeidou
-                        else -> true
-                    }
-                }
+                // Le filtrage par constellation a été déplacé dans SatellitePredictor.generateMultiDayForecast pour de meilleures performances
                 
                 val satForecasts = predictor.generateMultiDayForecast(
                     lat, 
                     lon, 
                     currentState.kpValue?.toFloat() ?: 0f,
-                    filteredTle,
+                    allTle,
                     days = 7,
                     currentState.useGps,
                     currentState.useGlonass,
@@ -925,10 +938,10 @@ class WeatherViewModel(
                 )
                 
                 repository.updateSatelliteForecasts(satForecasts)
+            } catch (e: CancellationException) {
+                // Calculation cancelled, this is normal
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Sat calculation error: ${e.message}")
-            } finally {
-                isCalculatingSatellites = false
             }
         }
     }
